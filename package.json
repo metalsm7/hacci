@@ -1,0 +1,30 @@
+{
+  "name": "hacci",
+  "version": "0.0.8",
+  "description": "simple and tiny frontend framework",
+  "homepage": "https://github.com/metalsm7/hacci",
+  "bugs": {
+    "email": "metalsm7@gmail.com"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -t es5 && sed -i.bak \"s/^exports/\\\\/\\\\/exports/g\" index.js && sed -i \"s/^Object.defineProperty(exports/\\\\/\\\\/Object.defineProperty(exports/g\" index.js && sed -i \"s/^\\\\/\\\\/# sourceMappingURL/\\\\/\\\\/ sourceMappingURL/g\" index.js && uglifyjs index.js -c -m > dist/hacci.min.js && rm -f index.js && mv index.js.bak index.js"
+  },
+  "browserslist": [
+    "defaults",
+    "last 2 versions",
+    "ie >= 9",
+    "Safari >= 12",
+    "ios_saf >= 10",
+    "iOS >= 10"
+  ],
+  "author": "Lee yonghun <metalsm7@gmail.com> (https://github.com/metalsm7)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/metalsm7/hacci.git"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "uglify-js": "^3.13.6"
+  }
+}
