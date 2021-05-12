@@ -4,6 +4,7 @@ var Hacci = /** @class */ (function () {
     function Hacci(option) {
         if (option === void 0) { option = null; }
         //
+        this._id = null;
         this._el = null;
         //
         this._refs = {};
@@ -15,6 +16,9 @@ var Hacci = /** @class */ (function () {
         };
         //
         this._event_listeners = [];
+        //
+        this._id = this.createInstanceId();
+        //
         !option && (option = {
             el: null,
             template: null,
@@ -55,7 +59,16 @@ var Hacci = /** @class */ (function () {
         this._template && (this.el.innerHTML = this._template);
         //
         this._on && this._on.created && this._on.created();
+        //
+        Hacci.instances[this._id] = this;
     }
+    Object.defineProperty(Hacci, "instances", {
+        get: function () {
+            return Hacci._instances;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Hacci.prototype.init = function () {
         var _this = this;
         if (this.el) {
@@ -73,7 +86,8 @@ var Hacci = /** @class */ (function () {
                             //
                             _this.clearEventListeners();
                             //
-                            _this._on && _this._on.destroyed && _this._on.destroyed();
+                            // this._on && this._on.destroyed && this._on.destroyed();
+                            _this.destroy();
                         }
                     }
                 }
@@ -292,12 +306,25 @@ var Hacci = /** @class */ (function () {
             });
         }
     };
+    Hacci.prototype.createInstanceId = function () {
+        var rtn_val = '';
+        for (var cnti = 0; cnti < 8; cnti++) {
+            var code = Math.floor(Math.random() * 51);
+            rtn_val += String.fromCharCode(code + (code < 26 ? 65 : 71));
+        }
+        rtn_val += '.' + Date.now();
+        return rtn_val;
+    };
     Hacci.prototype.destroy = function () {
         //
         this.clearEventListeners();
         // initialize
-        this._el = null;
         this._refs = {};
+        this._template = null;
+        //
+        this.el.parentElement.removeChild(this.el);
+        //
+        this._el = null;
         //
         this._on && this._on.destroyed && this._on.destroyed();
         //
@@ -306,6 +333,11 @@ var Hacci = /** @class */ (function () {
             mounted: null,
             destroyed: null,
         };
+        //
+        if (Hacci.instances[this._id]) {
+            Hacci.instances[this._id] = null;
+            delete Hacci.instances[this._id];
+        }
     };
     //
     Hacci.prototype.mount = function (el) {
@@ -330,6 +362,8 @@ var Hacci = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    //
+    Hacci._instances = {};
     return Hacci;
 }());
 exports.Hacci = Hacci;

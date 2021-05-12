@@ -15,6 +15,9 @@ interface HacciEventListener {
 
 class Hacci {
     //
+    static _instances: any = {};
+    //
+    private _id: string = null;
     private _el: Element|null = null;
     private _template: string|null; // for future development
     //
@@ -28,7 +31,14 @@ class Hacci {
     //
     private _event_listeners: Array<HacciEventListener> = [];
 
+    static get instances() {
+        return Hacci._instances;
+    }
+
     constructor(option: HacciOption|null = null) {
+        //
+        this._id = this.createInstanceId();
+        //
         !option && (option = {
             el: null,
             template: null,
@@ -71,6 +81,9 @@ class Hacci {
 
         //
         this._on && this._on.created && this._on.created();
+
+        //
+        Hacci.instances[this._id] = this;
     }
 
     private init() {
@@ -88,7 +101,8 @@ class Hacci {
                             //
                             this.clearEventListeners();
                             //
-                            this._on && this._on.destroyed && this._on.destroyed();
+                            // this._on && this._on.destroyed && this._on.destroyed();
+                            this.destroy();
                         }
                     }
                 }
@@ -312,12 +326,26 @@ class Hacci {
         }
     }
 
+    private createInstanceId() {
+        let rtn_val: string = '';
+        for (let cnti: number = 0; cnti < 8; cnti++) {
+            const code = Math.floor(Math.random() * 51);
+            rtn_val += String.fromCharCode(code + (code < 26 ? 65 : 71));
+        }
+        rtn_val += '.' + Date.now();
+        return rtn_val;
+    }
+
     public destroy() {
         //
         this.clearEventListeners();
         // initialize
-        this._el = null;
         this._refs = {};
+        this._template = null;
+        //
+        this.el.parentElement.removeChild(this.el);
+        //
+        this._el = null;
         //
         this._on && this._on.destroyed && this._on.destroyed();
         //
@@ -326,6 +354,11 @@ class Hacci {
             mounted: null,
             destroyed: null,
         };
+        //
+        if (Hacci.instances[this._id]) {
+            Hacci.instances[this._id] = null;
+            delete Hacci.instances[this._id];
+        }
     }
 
     //
