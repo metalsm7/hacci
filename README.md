@@ -4,6 +4,10 @@ Hacci[hɑːʃiː] is a simple and tiny JavaScript helper for web frontend work.
 
 "If you're in a situation where you have to work with vanilla js or jquery..."
 
+DEMO
+---
+[DEMO](https://metalsm7.github.io/hacci/demo) [https://metalsm7.github.io/hacci/demo]
+
 Install
 ---
 NPM 사용하는 경우
