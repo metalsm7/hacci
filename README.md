@@ -329,3 +329,6 @@ How to use
     setTimeout(init, 1000);
 </script>
 ```
+License
+===
+[MIT](/LICENSE)
