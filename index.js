@@ -18,6 +18,7 @@ var Hacci = /** @class */ (function () {
         this._event_listeners = [];
         //
         this._id = this.createInstanceId();
+        Hacci.instances[this._id] = this;
         //
         !option && (option = {
             el: null,
@@ -45,22 +46,30 @@ var Hacci = /** @class */ (function () {
             for (var cnti = 0; cnti < method_keys.length; cnti++) {
                 // this[method_keys[cnti]] = eval(option.method[method_keys[cnti]].toString());
                 // eval(`this.${method_keys[cnti]} = ${option.method[method_keys[cnti]].toString()}`);
-                this[method_keys[cnti]] = option.method[method_keys[cnti]].bind(this);
+                // if (typeof option.method[method_keys[cnti]].prototype === 'undefined') {
+                //     // is arrow function
+                //     let fn_str = option.method[method_keys[cnti]].toString();
+                //     fn_str = `return function${fn_str.replace(/\)\s*=>.*{(.|\r|\n)*/, ')')}${fn_str.replace(/^.*=>\s*{/, '{')}`;
+                //     this[method_keys[cnti]] = new Function(fn_str)();
+                // }
+                // else {
+                //     // is not arrow function
+                //     this[method_keys[cnti]] = option.method[method_keys[cnti]].bind(this);
+                // }
+                this[method_keys[cnti]] = this.fromArrowFunc(option.method[method_keys[cnti]]).bind(this);
             }
         }
         //
         // option.created && (this._on.created = eval(option.created.toString()));
-        option.created && (this._on.created = option.created.bind(this));
+        option.created && (this._on.created = this.fromArrowFunc(option.created).bind(this));
         // option.mounted && (this._on.mounted = eval(option.mounted.toString()));
-        option.mounted && (this._on.mounted = option.mounted.bind(this));
+        option.mounted && (this._on.mounted = this.fromArrowFunc(option.mounted).bind(this));
         // option.destroyed && (this._on.destroyed = eval(option.destroyed.toString()));
-        option.destroyed && (this._on.destroyed = option.destroyed.bind(this));
+        option.destroyed && (this._on.destroyed = this.fromArrowFunc(option.destroyed).bind(this));
         //
         this._template && (this.el.innerHTML = this._template);
         //
         this._on && this._on.created && this._on.created();
-        //
-        Hacci.instances[this._id] = this;
     }
     Object.defineProperty(Hacci, "instances", {
         get: function () {
@@ -121,13 +130,14 @@ var Hacci = /** @class */ (function () {
                                 (['INPUT', 'TEXTAREA', 'SELECT'].indexOf(obj.tagName) > -1) &&
                                     (['text', 'textarea', 'select-one', 'select-multiple'].indexOf(obj['type']) > -1) &&
                                     this_1.observeElement(obj, 'value', function (_old_val, _new_val) {
+                                        var event_name = (['select-one', 'select-multiple'].indexOf(obj['type']) > -1) ? 'change' : 'input';
                                         var event = null;
                                         if (typeof (Event) === 'function') {
-                                            event = new Event('input');
+                                            event = new Event(event_name);
                                         }
                                         else {
                                             event = document.createEvent('Event');
-                                            event.initEvent('input', true, true);
+                                            event.initEvent(event_name, true, true);
                                         }
                                         obj.dispatchEvent(event);
                                     });
@@ -162,6 +172,12 @@ var Hacci = /** @class */ (function () {
                                 else {
                                     obj.removeAttribute(attrs[cnti_1].name.substring(3));
                                 }
+                                break;
+                            case 'hc:text':
+                                obj.innerText = this_1[attrs[cnti_1].value];
+                                break;
+                            case 'hc:html':
+                                obj.innerHTML = this_1[attrs[cnti_1].value];
                                 break;
                         }
                     }
@@ -315,14 +331,31 @@ var Hacci = /** @class */ (function () {
         rtn_val += '.' + Date.now();
         return rtn_val;
     };
+    // fincout is arrow function
+    Hacci.prototype.isArrowFunc = function (func) {
+        return typeof func.prototype === 'undefined';
+    };
+    // arrow function to ES5 function (resolving "this" problem)
+    Hacci.prototype.fromArrowFunc = function (func) {
+        if (this.isArrowFunc(func)) {
+            // is arrow function
+            var fn_str = func.toString();
+            fn_str = "return function" +
+                ((fn_str.substring(0, 1) === '(' ? '' : '(')) +
+                fn_str.replace(/\)?\s*=>.*{(.|\r|\n)*/, ')') +
+                fn_str.replace(/^.*=>\s*{/, '{');
+            return new Function(fn_str)();
+        }
+        return func;
+    };
     Hacci.prototype.destroy = function () {
         //
         this.clearEventListeners();
         // initialize
         this._refs = {};
-        this._template = null;
         //
-        this.el.parentElement.removeChild(this.el);
+        this._template && this.el.parentElement.removeChild(this.el);
+        this._template = null;
         //
         this._el = null;
         //
@@ -367,5 +400,5 @@ var Hacci = /** @class */ (function () {
     return Hacci;
 }());
 exports.Hacci = Hacci;
-window['Hacci'] = Hacci;
+// window['Hacci'] = Hacci;
 //# sourceMappingURL=index.js.map

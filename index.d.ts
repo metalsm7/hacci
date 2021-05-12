@@ -24,6 +24,8 @@ declare class Hacci {
     private callMethod;
     private observeElement;
     private createInstanceId;
+    private isArrowFunc;
+    private fromArrowFunc;
     destroy(): void;
     mount(el: Element | null): Hacci;
     readonly el: Element | null;
