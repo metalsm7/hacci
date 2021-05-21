@@ -8,6 +8,7 @@ var Hacci = /** @class */ (function () {
         this._el = null;
         //
         this._refs = {};
+        // private _v_refs: any = {};
         //
         this._on = {
             created: null,
@@ -19,6 +20,15 @@ var Hacci = /** @class */ (function () {
         //
         this._id = this.createInstanceId();
         Hacci.instances[this._id] = this;
+        //
+        // Object.prototype['findVal'] = function (str: string): any {
+        //     const idx = str.indexOf('.');
+        //     if (idx > 0) {
+        //         const key = str.substring(0, idx);
+        //         return this[key].findVal(str.substring(idx + 1));
+        //     };
+        //     return this[str];
+        // }
         //
         !option && (option = {
             el: null,
@@ -35,9 +45,37 @@ var Hacci = /** @class */ (function () {
         option.template && (this._template = option.template); // for future development
         //
         if (option.data) {
+            //
+            // this['listener'] = function(key, val) {
+            //     console.log(`${key}.set = ${val}`);
+            //     if (this._v_refs[key]) {
+            //         for (let cnti = 0; cnti < this._v_refs[key].length; cnti++) {
+            //             this._v_refs[key][cnti].value = val;
+            //         }
+            //     }
+            // };
+            //
             var data_keys = Object.keys(option.data);
             for (var cnti = 0; cnti < data_keys.length; cnti++) {
                 this[data_keys[cnti]] = option.data[data_keys[cnti]];
+                // console.log(`this.${data_keys[cnti]}: ${JSON.stringify(option.data[data_keys[cnti]])}`);
+                // this['__' + data_keys[cnti]] = option.data[data_keys[cnti]];
+                //
+                // this.redefineProperty(this, data_keys[cnti]);
+                //
+                // let elementPrototype = Object.getPrototypeOf(this);
+                // let descriptor = Object.getOwnPropertyDescriptor(elementPrototype, data_keys[cnti]);
+                // Object.defineProperty(this, data_keys[cnti], {
+                //     get: function() {
+                //         // console.log(`${data_keys[cnti]}.get:${this[data_keys[cnti]]}`);
+                //         return this['__' + data_keys[cnti]];
+                //     },
+                //     set: function(val) {
+                //         this['__' + data_keys[cnti]] = val;
+                //         this.listener(data_keys[cnti], val);
+                //         return val;
+                //     }
+                // });
             }
         }
         //
@@ -158,8 +196,11 @@ var Hacci = /** @class */ (function () {
                             case 'hc:value':
                                 // obj.setAttribute('value', eval(`this.${attrs[cnti].value}`));
                                 // (obj as HTMLInputElement).value = eval(`this.${attrs[cnti].value}`);
-                                obj.value = this_1[attrs[cnti_1].value];
+                                // (obj as HTMLInputElement).value = this.findVal(obj, attrs[cnti].value); // this[attrs[cnti].value];
+                                this_1.findVal(obj, attrs[cnti_1].value); // this[attrs[cnti].value];
                                 // eval(`obj.value = this.${attrs[cnti].value}`);
+                                // !this._v_refs[attrs[cnti].value] && (this._v_refs[attrs[cnti].value] = []);
+                                // this._v_refs[attrs[cnti].value].push(obj);
                                 break;
                             case 'hc:checked':
                             case 'hc:selected':
@@ -245,9 +286,24 @@ var Hacci = /** @class */ (function () {
     };
     Hacci.prototype.refresh = function () {
         //
+        this.clearData();
+        //
         this.clearEventListeners();
         //
         this.init();
+    };
+    Hacci.prototype.clearData = function () {
+        //
+        var regx = new RegExp(/^__hc\.v_.+/);
+        //
+        var keys = Object.keys(this);
+        for (var cnti = 0; cnti < keys.length; cnti++) {
+            if (regx.test(keys[cnti])) {
+                //
+                //
+                delete this[keys[cnti]];
+            }
+        }
     };
     Hacci.prototype.clearEventListeners = function () {
         //
@@ -348,6 +404,98 @@ var Hacci = /** @class */ (function () {
         }
         return func;
     };
+    Hacci.prototype.findVal = function (obj, keys, val, src) {
+        if (val === void 0) { val = null; }
+        if (src === void 0) { src = null; }
+        //
+        !src && (src = this);
+        //
+        var idx = keys.indexOf('.');
+        if (idx > 0) {
+            var key_1 = keys.substring(0, idx);
+            // console.log(`findVal - keys:${keys} / key:${key}`);
+            // redefineProperty
+            !src['__hc.lstn'] && (src['__hc.lstn'] = function (key, val) {
+                console.log(key + ".set = " + val);
+                // console.log(`_v_refs:${JSON.stringify(this._v_refs)}`);
+            });
+            //
+            src['__hc.v_' + key_1] = src[key_1];
+            Object.defineProperty(src, key_1, {
+                get: function () {
+                    // console.log(`${data_keys[cnti]}.get:${this[data_keys[cnti]]}`);
+                    return src['__hc.v_' + key_1];
+                },
+                set: function (val) {
+                    src['__hc.v_' + key_1] = val;
+                    src['__hc.lstn'](key_1, val);
+                    return val;
+                }
+            });
+            //
+            return src.findVal(obj, keys.substring(idx + 1), val, src[key_1]);
+        }
+        //
+        val && (src[keys] = val);
+        // console.log(`findVal.last - keys:${keys}`);
+        // redefineProperty
+        !src['__hc.lstn'] && (src['__hc.lstn'] = function (key, val) {
+            console.log(key + ".set = " + val);
+            // console.log(`_v_refs:${JSON.stringify(this._v_refs)}`);
+            if (this['__hc.refs'][key]) {
+                for (var cnti = 0; cnti < this['__hc.refs'][key].length; cnti++) {
+                    this['__hc.refs'][key][cnti].value = val;
+                }
+            }
+        });
+        //
+        !src['__hc.refs'] && (src['__hc.refs'] = {});
+        !src['__hc.refs'][keys] && (src['__hc.refs'][keys] = []);
+        src['__hc.refs'][keys].indexOf(obj) < 0 && src['__hc.refs'][keys].push(obj);
+        //
+        src['__hc.v_' + keys] = src[keys];
+        Object.defineProperty(src, keys, {
+            get: function () {
+                // console.log(`${data_keys[cnti]}.get:${this[data_keys[cnti]]}`);
+                return src['__hc.v_' + keys];
+            },
+            set: function (val) {
+                src['__hc.v_' + keys] = val;
+                src['__hc.lstn'](keys, val);
+                return val;
+            }
+        });
+        // console.log(src);
+        //
+        obj.value = src[keys];
+        //
+        return src[keys];
+    };
+    // private redefineProperty(key: string) {
+    //     //
+    //     !this['listener'] && (
+    //         this['listener'] = function(key, val) {
+    //             console.log(`${key}.set = ${val}`);
+    //             if (this._v_refs[key]) {
+    //                 for (let cnti = 0; cnti < this._v_refs[key].length; cnti++) {
+    //                     this._v_refs[key][cnti].value = val;
+    //                 }
+    //             }
+    //         }
+    //     );
+    //     //
+    //     Object.defineProperty(obj, key, {
+    //         get: function() {
+    //             // console.log(`${data_keys[cnti]}.get:${this[data_keys[cnti]]}`);
+    //             return obj['__' + key];
+    //         },
+    //         set: function(val) {
+    //             obj['__' + key] = val;
+    //             this.listener(key, val);
+    //             return val;
+    //         }
+    //     });
+    // }
     Hacci.prototype.destroy = function () {
         //
         this.clearEventListeners();

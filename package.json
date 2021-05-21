@@ -1,6 +1,6 @@
 {
   "name": "hacci",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "simple and tiny frontend framework",
   "homepage": "https://github.com/metalsm7/hacci",
   "bugs": {
@@ -8,6 +8,7 @@
   },
   "main": "index.js",
   "scripts": {
+    "build-dev": "tsc -t es5 && sed -i.bak \"s/^exports/\\\\/\\\\/ exports/g\" index.js && sed -i \"s/^Object.defineProperty(exports/\\\\/\\\\/ Object.defineProperty(exports/g\" index.js && sed -i \"s/^\\\\/\\\\/# sourceMappingURL/\\\\/\\\\/ sourceMappingURL/g\" index.js && cp index.js dist/hacci.min.js && rm -f index.js && mv index.js.bak index.js && sed -i \"s/^window/\\\\/\\\\/ window/g\" index.js",
     "build": "tsc -t es5 && sed -i.bak \"s/^exports/\\\\/\\\\/ exports/g\" index.js && sed -i \"s/^Object.defineProperty(exports/\\\\/\\\\/ Object.defineProperty(exports/g\" index.js && sed -i \"s/^\\\\/\\\\/# sourceMappingURL/\\\\/\\\\/ sourceMappingURL/g\" index.js && uglifyjs index.js -c -m > dist/hacci.min.js && rm -f index.js && mv index.js.bak index.js && sed -i \"s/^window/\\\\/\\\\/ window/g\" index.js"
   },
   "browserslist": [

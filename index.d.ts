@@ -19,6 +19,7 @@ declare class Hacci {
     constructor(option?: HacciOption | null);
     private init;
     refresh(): void;
+    clearData(): void;
     private clearEventListeners;
     private registEventListener;
     private callMethod;
@@ -26,6 +27,7 @@ declare class Hacci {
     private createInstanceId;
     private isArrowFunc;
     private fromArrowFunc;
+    private findVal;
     destroy(): void;
     mount(el: Element | null): Hacci;
     readonly el: Element | null;
