@@ -1,15 +1,26 @@
 {
   "name": "hacci",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "simple and tiny frontend framework",
   "homepage": "https://github.com/metalsm7/hacci",
   "bugs": {
     "email": "metalsm7@gmail.com"
   },
   "main": "index.js",
+  "watch": {
+    "build-dev": {
+      "patterns": ["src"],
+      "extensions": "js,ts",
+      "quiet": false,
+      "legacyWatch": true,
+      "delay": 2500,
+      "runOnChangeOnly": false
+    }
+  },
   "scripts": {
     "build-dev": "tsc -t es5 && sed -i.bak \"s/^exports/\\\\/\\\\/ exports/g\" index.js && sed -i \"s/^Object.defineProperty(exports/\\\\/\\\\/ Object.defineProperty(exports/g\" index.js && sed -i \"s/^\\\\/\\\\/# sourceMappingURL/\\\\/\\\\/ sourceMappingURL/g\" index.js && cp index.js dist/hacci.min.js && rm -f index.js && mv index.js.bak index.js && sed -i \"s/^window/\\\\/\\\\/ window/g\" index.js",
-    "build": "tsc -t es5 && sed -i.bak \"s/^exports/\\\\/\\\\/ exports/g\" index.js && sed -i \"s/^Object.defineProperty(exports/\\\\/\\\\/ Object.defineProperty(exports/g\" index.js && sed -i \"s/^\\\\/\\\\/# sourceMappingURL/\\\\/\\\\/ sourceMappingURL/g\" index.js && uglifyjs index.js -c -m > dist/hacci.min.js && rm -f index.js && mv index.js.bak index.js && sed -i \"s/^window/\\\\/\\\\/ window/g\" index.js"
+    "build": "tsc -t es5 && sed -i.bak \"s/^exports/\\\\/\\\\/ exports/g\" index.js && sed -i \"s/^Object.defineProperty(exports/\\\\/\\\\/ Object.defineProperty(exports/g\" index.js && sed -i \"s/^\\\\/\\\\/# sourceMappingURL/\\\\/\\\\/ sourceMappingURL/g\" index.js && uglifyjs index.js -c -m > dist/hacci.min.js && rm -f index.js && mv index.js.bak index.js && sed -i \"s/^window/\\\\/\\\\/ window/g\" index.js",
+    "watch": "npm-watch"
   },
   "browserslist": [
     "defaults",
@@ -26,6 +37,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "npm-watch": "^0.9.0",
     "uglify-js": "^3.13.6"
   }
 }
