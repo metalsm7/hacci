@@ -18,9 +18,9 @@ declare class Hacci {
     private _objs;
     private _on;
     private _event_listeners;
-    private _type_of_event_input;
-    private _type_of_check_input;
-    private _type_of_select_input;
+    private _toi_input;
+    private _toi_check;
+    private _toi_select;
     static readonly instances: any;
     constructor(option?: HacciOption | null);
     private init;

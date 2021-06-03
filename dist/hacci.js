@@ -22,11 +22,11 @@ var Hacci = /** @class */ (function () {
         //
         this._event_listeners = [];
         //
-        this._type_of_event_input = [
+        this._toi_input = [
             'email', 'hidden', 'number', 'password', 'search', 'tel', 'url', 'datetime', 'text', 'textarea'
         ];
-        this._type_of_check_input = ['radio', 'checkbox'];
-        this._type_of_select_input = ['select-one', 'select-multiple'];
+        this._toi_check = ['radio', 'checkbox'];
+        this._toi_select = ['select-one', 'select-multiple'];
         //
         !option && (option = {
             id: null,
@@ -145,7 +145,7 @@ var Hacci = /** @class */ (function () {
                             return "continue";
                         }
                         //
-                        if (obj.tagName === 'INPUT' && self._type_of_check_input.indexOf(obj.type) > -1) {
+                        if (obj.tagName === 'INPUT' && self._toi_check.indexOf(obj.type) > -1) {
                             // 초기값 설정
                             var model_1 = this_1.getVal(attrs[cnti_1].value, this_1);
                             //
@@ -178,7 +178,7 @@ var Hacci = /** @class */ (function () {
                                 _this.modelTrigger(obj);
                             });
                         }
-                        else if (obj.tagName === 'SELECT' && self._type_of_select_input.indexOf(obj.type) > -1) {
+                        else if (obj.tagName === 'SELECT' && self._toi_select.indexOf(obj.type) > -1) {
                             // 초기값 설정
                             var model = this_1.getVal(attrs[cnti_1].value, this_1);
                             //
@@ -197,7 +197,7 @@ var Hacci = /** @class */ (function () {
                                 _this.modelTrigger(obj);
                             });
                         }
-                        else if (['INPUT', 'TEXTAREA'].indexOf(obj.tagName) > -1 && self._type_of_event_input.indexOf(obj.type) > -1) {
+                        else if (['INPUT', 'TEXTAREA'].indexOf(obj.tagName) > -1 && self._toi_input.indexOf(obj.type) > -1) {
                             // 초기값 설정
                             var model = this_1.getVal(attrs[cnti_1].value, this_1);
                             //
@@ -334,7 +334,7 @@ var Hacci = /** @class */ (function () {
                 for (var cnti_5 = 0; cnti_5 < attrs.length; cnti_5++) {
                     if (/^hc:model$/.test(attrs[cnti_5].name) && attrs[cnti_5].value === target_attr.value) {
                         //
-                        if (obj.tagName === 'INPUT' && this._type_of_check_input.indexOf(obj.type) > -1) {
+                        if (obj.tagName === 'INPUT' && this._toi_check.indexOf(obj.type) > -1) {
                             if (Array.isArray(model.val)) {
                                 obj.checked = model.val.indexOf(obj.value) > -1;
                             }
@@ -356,7 +356,7 @@ var Hacci = /** @class */ (function () {
                                 evt: null,
                             });
                         }
-                        else if (obj.tagName === 'SELECT' && this._type_of_select_input.indexOf(obj.type) > -1) {
+                        else if (obj.tagName === 'SELECT' && this._toi_select.indexOf(obj.type) > -1) {
                             var groups = obj.querySelectorAll("option");
                             for (var cntk = 0; cntk < groups.length; cntk++) {
                                 if (Array.isArray(model.val)) {
@@ -374,7 +374,7 @@ var Hacci = /** @class */ (function () {
                                 evt: null,
                             });
                         }
-                        else if (['INPUT', 'TEXTAREA'].indexOf(obj.tagName) > -1 && this._type_of_event_input.indexOf(obj.type) > -1) {
+                        else if (['INPUT', 'TEXTAREA'].indexOf(obj.tagName) > -1 && this._toi_input.indexOf(obj.type) > -1) {
                             obj.value = model.val;
                             //
                             evt.input.proc && this.callMethod({
@@ -754,7 +754,7 @@ var Hacci = /** @class */ (function () {
                         }
                         else if (/^hc:model$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
                             //
-                            if (obj.tagName === 'INPUT' && self._type_of_check_input.indexOf(obj.type) > -1) {
+                            if (obj.tagName === 'INPUT' && self._toi_check.indexOf(obj.type) > -1) {
                                 var group_name = obj.hasAttribute('name') ? obj.getAttribute('name') : null;
                                 // const target_added = target_names.indexOf(group_name) > -1;
                                 if (group_name) {
@@ -785,7 +785,7 @@ var Hacci = /** @class */ (function () {
                                     evt: null,
                                 });
                             }
-                            else if (obj.tagName === 'SELECT' && self._type_of_select_input.indexOf(obj.type) > -1) {
+                            else if (obj.tagName === 'SELECT' && self._toi_select.indexOf(obj.type) > -1) {
                                 var groups = obj.querySelectorAll("option");
                                 var changed = self.setSelectedValue(groups, value);
                                 //
@@ -800,7 +800,7 @@ var Hacci = /** @class */ (function () {
                                     evt: null,
                                 });
                             }
-                            else if (['INPUT', 'TEXTAREA'].indexOf(obj.tagName) > -1 && self._type_of_event_input.indexOf(obj.type) > -1) {
+                            else if (['INPUT', 'TEXTAREA'].indexOf(obj.tagName) > -1 && self._toi_input.indexOf(obj.type) > -1) {
                                 //
                                 var changed = obj.value != value;
                                 //
