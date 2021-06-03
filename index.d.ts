@@ -8,9 +8,6 @@ interface HacciOption {
     mounted: Function | null;
     destroyed: Function | null;
 }
-/**
- *
- */
 declare class Hacci {
     static _instances: any;
     private _id;
@@ -18,9 +15,12 @@ declare class Hacci {
     private _template;
     private _refs;
     private _traces;
+    private _objs;
     private _on;
     private _event_listeners;
     private _type_of_event_input;
+    private _type_of_check_input;
+    private _type_of_select_input;
     static readonly instances: any;
     constructor(option?: HacciOption | null);
     private init;
@@ -30,8 +30,10 @@ declare class Hacci {
     private modelTrigger;
     private registEventListener;
     private callMethod;
-    private commitEvent;
+    private getRandomString;
     private createInstanceId;
+    private createTagId;
+    private getCommentElement;
     private isArrowFunc;
     private fromArrowFunc;
     private getCheckedValue;

@@ -1,5 +1,5 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
+// Object.defineProperty(exports, "__esModule", { value: true });
 var Hacci = /** @class */ (function () {
     function Hacci(option) {
         if (option === void 0) { option = null; }
@@ -897,6 +897,6 @@ var Hacci = /** @class */ (function () {
     Hacci._instances = {};
     return Hacci;
 }());
-exports.Hacci = Hacci;
-// window['Hacci'] = Hacci;
-//# sourceMappingURL=index.js.map
+// exports.Hacci = Hacci;
+window['Hacci'] = Hacci;
+// sourceMappingURL=index.js.map
