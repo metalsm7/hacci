@@ -161,7 +161,7 @@ var Hacci = /** @class */ (function () {
                             obj.addEventListener('change', function (_evt) {
                                 var checked_value = null;
                                 (obj.type === 'radio') && (checked_value = obj.checked ? obj.value : null);
-                                (obj.type === 'checkbox') && (checked_value = obj.checked ? obj.value : []);
+                                (obj.type === 'checkbox') && (checked_value = obj.checked ? obj.value : (obj.hasAttribute('name') ? [] : null));
                                 //
                                 var group_name = obj.hasAttribute('name') ? obj.getAttribute('name') : null;
                                 if (group_name) {
@@ -524,19 +524,38 @@ var Hacci = /** @class */ (function () {
     };
     //
     Hacci.prototype.setCheckedValue = function (groups, value) {
-        // console.log(`setCheckedValue - value:${JSON.stringify(value)}`);
+        console.log("setCheckedValue.#1 - value:->");
+        console.log(value);
         //
         var rtn_val = false; // 변경 여부 반환
         //
+        var has_checked = false;
         for (var cntk = 0; cntk < groups.length; cntk++) {
             var item = groups[cntk];
             //
+            !has_checked && item.checked && (has_checked = true);
+            //
+            if (Array.isArray(value)) {
+                console.log("setCheckedValue.#2 - checked:" + item.checked + " / " + item.value + " in " + JSON.stringify(value));
+            }
+            else {
+                console.log("setCheckedValue.#2 - checked:" + item.checked + " / " + item.value + " is " + value);
+            }
+            //
             !rtn_val &&
-                item.checked &&
-                (Array.isArray(value) ?
-                    (value.indexOf(item.value) < 0) :
-                    (value != item.value)) &&
+                (item.checked &&
+                    (Array.isArray(value) ?
+                        (value.indexOf(item.value) < 0) :
+                        (value != item.value))
+                    ||
+                        !item.checked &&
+                            (Array.isArray(value) ?
+                                (value.indexOf(item.value) > -1) :
+                                (value == item.value))) &&
                 (rtn_val = true);
+            //
+            if (rtn_val)
+                break;
             // if (Array.isArray(value)) {
             //     // 변경 확인 처리
             //     !rtn_val && item.checked && (value.indexOf(item.value) < 0) && (rtn_val = true);
@@ -548,6 +567,8 @@ var Hacci = /** @class */ (function () {
             //     // console.log(`setCheckedValue.2 - checked:${item.checked} / value:${value} / item.value:${item.value} / rtn_val:${rtn_val}`);
             // }
         }
+        !has_checked && !rtn_val && (rtn_val = true);
+        console.log("setCheckedValue.proc - has_checked:" + has_checked + " / rtn_val:" + rtn_val);
         //
         for (var cntk = 0; cntk < groups.length; cntk++) {
             var item = groups[cntk];
@@ -573,14 +594,22 @@ var Hacci = /** @class */ (function () {
         //
         var rtn_val = false; // 변경 여부 반환
         //
+        var has_selected = false;
         for (var cntk = 0; cntk < groups.length; cntk++) {
             var item = groups[cntk];
             //
+            !has_selected && item.selected && (has_selected = true);
+            //
             !rtn_val &&
-                item.selected &&
-                (Array.isArray(value) ?
-                    (value.indexOf(item.value) < 0) :
-                    (value != item.value)) &&
+                (item.selected &&
+                    (Array.isArray(value) ?
+                        (value.indexOf(item.value) < 0) :
+                        (value != item.value))
+                    ||
+                        !item.selected &&
+                            (Array.isArray(value) ?
+                                (value.indexOf(item.value) > -1) :
+                                (value == item.value))) &&
                 (rtn_val = true);
             // if (Array.isArray(value)) {
             //     // 변경 확인 처리
@@ -592,7 +621,11 @@ var Hacci = /** @class */ (function () {
             //     !rtn_val && item.selected && (value != item.value) && (rtn_val = true);
             //     // console.log(`setSelectedValue.2 - selected:${item.selected} / value:${value} / item.value:${item.value} / rtn_val:${rtn_val}`);
             // }
+            //
+            if (rtn_val)
+                break;
         }
+        !has_selected && !rtn_val && (rtn_val = true);
         //
         for (var cntk = 0; cntk < groups.length; cntk++) {
             var item = groups[cntk];
@@ -674,7 +707,7 @@ var Hacci = /** @class */ (function () {
         //
         !this._traces.model['__listen'] &&
             (this._traces.model['__listen'] = function (property, value) {
-                // console.log(`listen - property:${property} / value:${value}`);
+                console.log("listen - property:" + property + " / value:" + value);
                 //
                 if (self._objs[property] && Array.isArray(self._objs[property])) {
                     for (var cnti = 0; cnti < self._objs[property].length; cnti++) {
@@ -835,16 +868,118 @@ var Hacci = /** @class */ (function () {
         this.setVal(option.property, model.val, traces);
         var traceModel = this.getVal(option.property, traces, '__');
         //
+        var redefineArray = function (obj) {
+            Object.defineProperty(obj, 'push', {
+                enumerable: false,
+                configurable: true,
+                writable: true,
+                value: function () {
+                    var args = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        args[_i] = arguments[_i];
+                    }
+                    //
+                    console.log("redefine - Array.push - proc");
+                    console.log("redefine - Array.push - traceModel:->");
+                    console.log(traceModel);
+                    var rtn_val = Array.prototype.push.apply(traceModel.parent[traceModel.prop], args);
+                    //
+                    // Array.prototype.push.apply(this, args);
+                    // const rtn_val = Array.prototype.push.apply(traceModel.parent[`__${model.prop}`], args);
+                    // console.log(`redefine - Array.push - obj:->`);
+                    // console.log(obj);
+                    // traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
+                    traces.__listen(option.property, traceModel.parent[traceModel.prop]);
+                    return rtn_val;
+                }
+            });
+            Object.defineProperty(obj, 'splice', {
+                enumerable: false,
+                configurable: true,
+                writable: true,
+                value: function () {
+                    var args = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        args[_i] = arguments[_i];
+                    }
+                    console.log("redefine - Array.splice - proc");
+                    // Array.prototype.splice.apply(this, args);
+                    var rtn_val = Array.prototype.splice.apply(traceModel.parent[traceModel.prop], args);
+                    // console.log(`option.property:${option.property}`);
+                    // traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
+                    traces.__listen(option.property, traceModel.parent[traceModel.prop]);
+                    return rtn_val;
+                }
+            });
+        };
+        //
+        // Array.isArray(model.parent[model.prop]) && redefineArray(model.parent[model.prop]);
+        //
+        // if (Array.isArray(model.parent[model.prop])) {
+        //     Object.defineProperty(model.parent[model.prop], 'push', {
+        //         enumerable: false,
+        //         configurable: true,
+        //         writable: true,
+        //         value: function (...args) {
+        //             // const rtn_val = Array.prototype.push.apply(this, args);
+        //             const rtn_val = Array.prototype.push.apply(traceModel.parent[`__${model.prop}`], args);
+        //             // console.log(`option.property:${option.property}`);
+        //             traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
+        //             // traces.__listen(option.property, this);
+        //             return rtn_val;
+        //         }
+        //     });
+        //     Object.defineProperty(model.parent[model.prop], 'splice', {
+        //         enumerable: false,
+        //         configurable: true,
+        //         writable: true,
+        //         value: function (...args) {
+        //             // const rtn_val = Array.prototype.splice.apply(this, args);
+        //             const rtn_val = Array.prototype.splice.apply(traceModel.parent[`__${model.prop}`], args);
+        //             // console.log(`option.property:${option.property}`);
+        //             traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
+        //             // traces.__listen(option.property, this);
+        //             return rtn_val;
+        //         }
+        //     });
+        // }
+        //
         model.parent && model.prop &&
             Object.defineProperty(model.parent, model.prop, {
                 get: function () {
-                    return self.getVal(option.property, traces, '__').val;
+                    console.log("redefine - get - proc");
+                    var rtn_val = self.getVal(option.property, traces, '__').val;
+                    console.log("redefine - get:->");
+                    console.log(rtn_val);
+                    return rtn_val;
                 },
                 set: function (value) {
+                    console.log("redefine - set - proc");
                     traceModel.parent["__" + model.prop] = value;
+                    console.log("redefine - set:->");
+                    console.log(traceModel.parent["__" + model.prop]);
+                    //
+                    // Array.isArray(value) && redefineArray(value);
+                    //
                     traces.__listen(option.property, value);
-                },
+                }
             });
+        //
+        Object.defineProperty(Array.prototype, 'push', {
+            enumerable: false,
+            configurable: false,
+            writable: false,
+            value: function () {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i] = arguments[_i];
+                }
+                return -1;
+                // const rtn_val = Array.prototype.push.apply(this, args);
+                // console.log(`Array.prototype.push`);
+                // return rtn_val;
+            }
+        });
     };
     Hacci.prototype.destroy = function () {
         //
