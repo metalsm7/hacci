@@ -445,7 +445,7 @@ class Hacci {
                 args[idx] = new_el === '_event' ? option.evt : eval(new_el);
             });
             //
-            if (args.length < 2 && args[0] === '') args[0] = option.evt;
+            // if (args.length < 2 && args[0] === '') args[0] = option.evt;
             //
             this[method_name](...args);
         }

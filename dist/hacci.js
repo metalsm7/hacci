@@ -480,8 +480,7 @@ var Hacci = /** @class */ (function () {
                 args_1[idx] = new_el === '_event' ? option.evt : eval(new_el);
             });
             //
-            if (args_1.length < 2 && args_1[0] === '')
-                args_1[0] = option.evt;
+            // if (args.length < 2 && args[0] === '') args[0] = option.evt;
             //
             this[method_name].apply(this, args_1);
         }
