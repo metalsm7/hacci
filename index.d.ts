@@ -42,6 +42,7 @@ declare class Hacci {
     private setSelectedValue;
     private getVal;
     private setVal;
+    private arrayEventListener;
     private traceModel;
     destroy(): void;
     mount(el: Element | null): Hacci;

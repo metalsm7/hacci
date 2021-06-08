@@ -196,9 +196,12 @@ class Hacci {
                                     obj.checked = obj.value == model.val;
                                 }
                                 //
+                                Array.isArray(checked_value) && self.arrayEventListener(model.prop, checked_value);
+                                //
                                 const target_obj = self.getVal(attrs[cnti].value, self._traces.model, '__');
                                 target_obj.parent[target_obj.prop] = checked_value;
                                 //
+                                console.log(`init - ${obj.tagName} - ${obj.type} - changed`);
                                 this.modelTrigger(obj);
                             });
                         }
@@ -214,6 +217,8 @@ class Hacci {
                                 //
                                 const groups = obj.querySelectorAll(`option`);
                                 checked_value = self.getSelectedValue(groups, obj.type === 'select-multiple');
+                                //
+                                Array.isArray(checked_value) && self.arrayEventListener(model.prop, checked_value);
                                 //
                                 const target_obj = self.getVal(attrs[cnti].value, self._traces.model, '__');
                                 target_obj.parent[target_obj.prop] = checked_value;
@@ -734,6 +739,38 @@ class Hacci {
         }
     }
 
+    private arrayEventListener = function(prop, target) {
+        //
+        const traces = this._traces.model;
+
+        //
+        target.push = function(...args) {
+            Array.prototype.push.call(target, ...args);
+            console.log(`arrayEventListener.push`);
+            traces.__listen(prop, target);
+        },
+        target.pop = function(...args) {
+            Array.prototype.pop.call(target, ...args);
+            console.log(`arrayEventListener.pop`);
+            traces.__listen(prop, target);
+        },
+        target.splice = function(...args) {
+            Array.prototype.splice.call(target, ...args);
+            console.log(`arrayEventListener.splice`);
+            traces.__listen(prop, target);
+        },
+        target.shift = function(...args) {
+            Array.prototype.shift.call(target, ...args);
+            console.log(`arrayEventListener.shift`);
+            traces.__listen(prop, target);
+        },
+        target.unshift = function(...args) {
+            Array.prototype.unshift.call(target, ...args);
+            console.log(`arrayEventListener.unshift`);
+            traces.__listen(prop, target);
+        }
+    }
+
     private traceModel(option: HacciTraceModelOption) {
         //
         if ((new RegExp(/^(true|false|'.+'|\d+)$/)).test(option.property)) return;
@@ -912,42 +949,42 @@ class Hacci {
         const traceModel = this.getVal(option.property, traces, '__');
 
         //
-        const redefineArray = function(obj) {
-            Object.defineProperty(obj, 'push', {
-                enumerable: false,
-                configurable: true,
-                writable: true,
-                value: function (...args) {
-                    //
-                    console.log(`redefine - Array.push - proc`);
-                    console.log(`redefine - Array.push - traceModel:->`);
-                    console.log(traceModel);
-                    const rtn_val = Array.prototype.push.apply(traceModel.parent[traceModel.prop], args);
-                    //
-                    // Array.prototype.push.apply(this, args);
-                    // const rtn_val = Array.prototype.push.apply(traceModel.parent[`__${model.prop}`], args);
-                    // console.log(`redefine - Array.push - obj:->`);
-                    // console.log(obj);
-                    // traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
-                    traces.__listen(option.property, traceModel.parent[traceModel.prop]);
-                    return rtn_val;
-                }
-            });
-            Object.defineProperty(obj, 'splice', {
-                enumerable: false,
-                configurable: true,
-                writable: true,
-                value: function (...args) {
-                    console.log(`redefine - Array.splice - proc`);
-                    // Array.prototype.splice.apply(this, args);
-                    const rtn_val = Array.prototype.splice.apply(traceModel.parent[traceModel.prop], args);
-                    // console.log(`option.property:${option.property}`);
-                    // traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
-                    traces.__listen(option.property, traceModel.parent[traceModel.prop]);
-                    return rtn_val;
-                }
-            });
-        };
+        // const redefineArray = function(obj) {
+        //     Object.defineProperty(obj, 'push', {
+        //         enumerable: false,
+        //         configurable: true,
+        //         writable: true,
+        //         value: function (...args) {
+        //             //
+        //             console.log(`redefine - Array.push - proc`);
+        //             console.log(`redefine - Array.push - traceModel:->`);
+        //             console.log(traceModel);
+        //             const rtn_val = Array.prototype.push.apply(traceModel.parent[traceModel.prop], args);
+        //             //
+        //             // Array.prototype.push.apply(this, args);
+        //             // const rtn_val = Array.prototype.push.apply(traceModel.parent[`__${model.prop}`], args);
+        //             // console.log(`redefine - Array.push - obj:->`);
+        //             // console.log(obj);
+        //             // traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
+        //             traces.__listen(option.property, traceModel.parent[traceModel.prop]);
+        //             return rtn_val;
+        //         }
+        //     });
+        //     Object.defineProperty(obj, 'splice', {
+        //         enumerable: false,
+        //         configurable: true,
+        //         writable: true,
+        //         value: function (...args) {
+        //             console.log(`redefine - Array.splice - proc`);
+        //             // Array.prototype.splice.apply(this, args);
+        //             const rtn_val = Array.prototype.splice.apply(traceModel.parent[traceModel.prop], args);
+        //             // console.log(`option.property:${option.property}`);
+        //             // traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
+        //             traces.__listen(option.property, traceModel.parent[traceModel.prop]);
+        //             return rtn_val;
+        //         }
+        //     });
+        // };
 
         //
         // Array.isArray(model.parent[model.prop]) && redefineArray(model.parent[model.prop]);
@@ -980,6 +1017,10 @@ class Hacci {
         //         }
         //     });
         // }
+
+        //
+        Array.isArray(model.parent[model.prop]) && this.arrayEventListener(option.property, model.parent[model.prop]);
+
         //
         model.parent && model.prop &&
             Object.defineProperty(
@@ -995,29 +1036,19 @@ class Hacci {
                     },
                     set: function(value: any) {
                         console.log(`redefine - set - proc`);
+                        // traceModel.parent[`__${model.prop}`] = value;
                         traceModel.parent[`__${model.prop}`] = value;
                         console.log(`redefine - set:->`);
                         console.log(traceModel.parent[`__${model.prop}`]);
                         //
                         // Array.isArray(value) && redefineArray(value);
                         //
+                        Array.isArray(value) && self.arrayEventListener(option.property, value);
+                        //
                         traces.__listen(option.property, value);
                     }
                 }
             );
-
-        //
-        Object.defineProperty(Array.prototype, 'push', {
-            enumerable: false,
-            configurable: false,
-            writable: false,
-            value: function (...args) {
-                return -1;
-                // const rtn_val = Array.prototype.push.apply(this, args);
-                // console.log(`Array.prototype.push`);
-                // return rtn_val;
-            }
-        });
     }
 
     public destroy() {
