@@ -38,7 +38,7 @@ var Hacci = /** @class */ (function () {
                 }
                 var _a;
                 (_a = Array.prototype.push).call.apply(_a, [target].concat(args));
-                console.log("arrayEventListener.push");
+                // console.log(`arrayEventListener.push`);
                 traces.__listen(prop, target);
             },
                 target.pop = function () {
@@ -48,7 +48,7 @@ var Hacci = /** @class */ (function () {
                     }
                     var _a;
                     (_a = Array.prototype.pop).call.apply(_a, [target].concat(args));
-                    console.log("arrayEventListener.pop");
+                    // console.log(`arrayEventListener.pop`);
                     traces.__listen(prop, target);
                 },
                 target.splice = function () {
@@ -58,7 +58,7 @@ var Hacci = /** @class */ (function () {
                     }
                     var _a;
                     (_a = Array.prototype.splice).call.apply(_a, [target].concat(args));
-                    console.log("arrayEventListener.splice");
+                    // console.log(`arrayEventListener.splice`);
                     traces.__listen(prop, target);
                 },
                 target.shift = function () {
@@ -68,7 +68,7 @@ var Hacci = /** @class */ (function () {
                     }
                     var _a;
                     (_a = Array.prototype.shift).call.apply(_a, [target].concat(args));
-                    console.log("arrayEventListener.shift");
+                    // console.log(`arrayEventListener.shift`);
                     traces.__listen(prop, target);
                 },
                 target.unshift = function () {
@@ -78,7 +78,7 @@ var Hacci = /** @class */ (function () {
                     }
                     var _a;
                     (_a = Array.prototype.unshift).call.apply(_a, [target].concat(args));
-                    console.log("arrayEventListener.unshift");
+                    // console.log(`arrayEventListener.unshift`);
                     traces.__listen(prop, target);
                 };
         };
@@ -166,10 +166,11 @@ var Hacci = /** @class */ (function () {
             var objs = this.el.querySelectorAll('*');
             var _loop_1 = function (cnti) {
                 var obj = objs[cnti];
+                // 1. attribute 처리
                 //
                 var attrs = obj['attributes'];
                 var _loop_2 = function (cnti_1) {
-                    if (/^hc:(model|if|neither)$/.test(attrs[cnti_1].name)) {
+                    if (/^hc:(model|if|neither|html|text)$/.test(attrs[cnti_1].name)) {
                         //
                         this_1.traceModel({
                             parent: this_1,
@@ -181,7 +182,7 @@ var Hacci = /** @class */ (function () {
                             var model = this_1.getVal(attrs[cnti_1].value, this_1);
                             if (/^hc:if$/.test(attrs[cnti_1].name) && model.val === false ||
                                 /^hc:neither$/.test(attrs[cnti_1].name) && model.val === true) {
-                                //
+                                //hc:
                                 var tag_id = self.createTagId();
                                 var blankEl = window.document.createComment("//hc:" + self._id + ":" + tag_id);
                                 obj.parentNode.insertBefore(blankEl, obj);
@@ -195,6 +196,14 @@ var Hacci = /** @class */ (function () {
                                 });
                                 obj.parentNode.removeChild(obj);
                             }
+                        }
+                        else if (/^hc:html$/.test(attrs[cnti_1].name)) {
+                            var model = this_1.getVal(attrs[cnti_1].value, this_1);
+                            obj.innerHTML = model.val;
+                        }
+                        else if (/^hc:text$/.test(attrs[cnti_1].name)) {
+                            var model = this_1.getVal(attrs[cnti_1].value, this_1);
+                            obj.innerText = model.val;
                         }
                         else if (!/^hc:model$/.test(attrs[cnti_1].name)) {
                             return "continue";
@@ -232,7 +241,7 @@ var Hacci = /** @class */ (function () {
                                 var target_obj = self.getVal(attrs[cnti_1].value, self._traces.model, '__');
                                 target_obj.parent[target_obj.prop] = checked_value;
                                 //
-                                console.log("init - " + obj.tagName + " - " + obj.type + " - changed");
+                                // console.log(`init - ${obj.tagName} - ${obj.type} - changed`);
                                 _this.modelTrigger(obj);
                             });
                         }
@@ -279,6 +288,8 @@ var Hacci = /** @class */ (function () {
                 for (var cnti_1 = 0; cnti_1 < attrs.length; cnti_1++) {
                     _loop_2(cnti_1);
                 }
+                // 2. text 처리
+                var text = obj.innerText;
             };
             var this_1 = this;
             //
@@ -301,12 +312,12 @@ var Hacci = /** @class */ (function () {
                             case 'hc:click':
                                 this.registEventListener(obj, 'click', attrs[cnti_2]);
                                 break;
-                            case 'hc:text':
-                                obj.innerText = this[attrs[cnti_2].value];
-                                break;
-                            case 'hc:html':
-                                obj.innerHTML = this[attrs[cnti_2].value];
-                                break;
+                            // case 'hc:text':
+                            //     (obj as HTMLInputElement).innerText = this[attrs[cnti].value];
+                            //     break;
+                            // case 'hc:html':
+                            //     (obj as HTMLInputElement).innerHTML = this[attrs[cnti].value];
+                            //     break;
                         }
                     }
                 }
@@ -444,6 +455,12 @@ var Hacci = /** @class */ (function () {
                                 evt: null,
                             });
                         }
+                    }
+                    else if (/^hc:html$/.test(attrs[cnti_5].name) && attrs[cnti_5].value === target_attr.value) {
+                        obj.innerHTML = model.val;
+                    }
+                    else if (/^hc:text$/.test(attrs[cnti_5].name) && attrs[cnti_5].value === target_attr.value) {
+                        obj.innerText = model.val;
                     }
                 }
             }
@@ -583,8 +600,8 @@ var Hacci = /** @class */ (function () {
     };
     //
     Hacci.prototype.setCheckedValue = function (groups, value) {
-        console.log("setCheckedValue.#1 - value:->");
-        console.log(value);
+        // console.log(`setCheckedValue.#1 - value:->`);
+        // console.log(value);
         //
         var rtn_val = false; // 변경 여부 반환
         //
@@ -594,12 +611,12 @@ var Hacci = /** @class */ (function () {
             //
             !has_checked && item.checked && (has_checked = true);
             //
-            if (Array.isArray(value)) {
-                console.log("setCheckedValue.#2 - checked:" + item.checked + " / " + item.value + " in " + JSON.stringify(value));
-            }
-            else {
-                console.log("setCheckedValue.#2 - checked:" + item.checked + " / " + item.value + " is " + value);
-            }
+            // if (Array.isArray(value)) {
+            //     console.log(`setCheckedValue.#2 - checked:${item.checked} / ${item.value} in ${JSON.stringify(value)}`);
+            // }
+            // else {
+            //     console.log(`setCheckedValue.#2 - checked:${item.checked} / ${item.value} is ${value}`);
+            // }
             //
             !rtn_val &&
                 (item.checked &&
@@ -627,7 +644,7 @@ var Hacci = /** @class */ (function () {
             // }
         }
         !has_checked && !rtn_val && (rtn_val = true);
-        console.log("setCheckedValue.proc - has_checked:" + has_checked + " / rtn_val:" + rtn_val);
+        // console.log(`setCheckedValue.proc - has_checked:${has_checked} / rtn_val:${rtn_val}`);
         //
         for (var cntk = 0; cntk < groups.length; cntk++) {
             var item = groups[cntk];
@@ -763,10 +780,11 @@ var Hacci = /** @class */ (function () {
         // parent 확인 및 지정
         (['undefined', 'null'].indexOf(typeof option.parent) > -1) &&
             (option.parent = this);
+        // console.log(`traceModel - option:${JSON.stringify(option)}`);
         //
         !this._traces.model['__listen'] &&
             (this._traces.model['__listen'] = function (property, value) {
-                console.log("listen - property:" + property + " / value:" + value);
+                console.log("traceModel - listen - property:" + property + " / value:" + value);
                 //
                 if (self._objs[property] && Array.isArray(self._objs[property])) {
                     for (var cnti = 0; cnti < self._objs[property].length; cnti++) {
@@ -843,6 +861,12 @@ var Hacci = /** @class */ (function () {
                                 });
                                 obj.parentNode.removeChild(obj);
                             }
+                        }
+                        else if (/^hc:html$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
+                            obj.innerHTML = option.parent[option.property];
+                        }
+                        else if (/^hc:text$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
+                            obj.innerText = option.parent[option.property];
                         }
                         else if (/^hc:model$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
                             //
@@ -1000,14 +1024,14 @@ var Hacci = /** @class */ (function () {
         model.parent && model.prop &&
             Object.defineProperty(model.parent, model.prop, {
                 get: function () {
-                    console.log("redefine - get - proc");
+                    // console.log(`redefine - get - proc`);
                     var rtn_val = self.getVal(option.property, traces, '__').val;
-                    console.log("redefine - get:->");
-                    console.log(rtn_val);
+                    // console.log(`redefine - get:->`);
+                    // console.log(rtn_val);
                     return rtn_val;
                 },
                 set: function (value) {
-                    console.log("redefine - set - proc");
+                    // console.log(`redefine - set - proc`);
                     // traceModel.parent[`__${model.prop}`] = value;
                     traceModel.parent["__" + model.prop] = value;
                     console.log("redefine - set:->");

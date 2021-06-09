@@ -132,11 +132,14 @@ class Hacci {
             //
             for (let cnti = 0; cnti < objs.length; cnti++) {
                 const obj = objs[cnti] as HTMLInputElement;
+
+                // 1. attribute 처리
+
                 //
                 const attrs = obj['attributes'];
                 //
                 for (let cnti: number = 0; cnti < attrs.length; cnti++) {
-                    if (/^hc:(model|if|neither)$/.test(attrs[cnti].name)) {
+                    if (/^hc:(model|if|neither|html|text)$/.test(attrs[cnti].name)) {
                         //
                         this.traceModel({
                             parent: this,
@@ -150,7 +153,7 @@ class Hacci {
                                 /^hc:if$/.test(attrs[cnti].name) && model.val === false ||
                                 /^hc:neither$/.test(attrs[cnti].name) && model.val === true
                             ) {
-                                //
+                                //hc:
                                 const tag_id = self.createTagId();
                                 const blankEl = window.document.createComment(`//hc:${self._id}:${tag_id}`);
                                 obj.parentNode.insertBefore(blankEl, obj);
@@ -164,6 +167,14 @@ class Hacci {
                                 });
                                 obj.parentNode.removeChild(obj);
                             }
+                        }
+                        else if (/^hc:html$/.test(attrs[cnti].name)) {
+                            const model = this.getVal(attrs[cnti].value, this);
+                            obj.innerHTML = model.val;
+                        }
+                        else if (/^hc:text$/.test(attrs[cnti].name)) {
+                            const model = this.getVal(attrs[cnti].value, this);
+                            obj.innerText = model.val;
                         }
                         else if (!/^hc:model$/.test(attrs[cnti].name)) {
                             continue;
@@ -201,7 +212,7 @@ class Hacci {
                                 const target_obj = self.getVal(attrs[cnti].value, self._traces.model, '__');
                                 target_obj.parent[target_obj.prop] = checked_value;
                                 //
-                                console.log(`init - ${obj.tagName} - ${obj.type} - changed`);
+                                // console.log(`init - ${obj.tagName} - ${obj.type} - changed`);
                                 this.modelTrigger(obj);
                             });
                         }
@@ -244,6 +255,9 @@ class Hacci {
                         }
                     }
                 }
+
+                // 2. text 처리
+                const text = obj.innerText;
             }
             //
             for (let cnti = 0; cnti < objs.length; cnti++) {
@@ -261,12 +275,12 @@ class Hacci {
                             case 'hc:click':
                                 this.registEventListener(obj, 'click', attrs[cnti]);
                                 break;
-                            case 'hc:text':
-                                (obj as HTMLInputElement).innerText = this[attrs[cnti].value];
-                                break;
-                            case 'hc:html':
-                                (obj as HTMLInputElement).innerHTML = this[attrs[cnti].value];
-                                break;
+                            // case 'hc:text':
+                            //     (obj as HTMLInputElement).innerText = this[attrs[cnti].value];
+                            //     break;
+                            // case 'hc:html':
+                            //     (obj as HTMLInputElement).innerHTML = this[attrs[cnti].value];
+                            //     break;
                         }
                     }
                 }
@@ -408,6 +422,12 @@ class Hacci {
                                 evt: null,
                             })
                         }
+                    }
+                    else if (/^hc:html$/.test(attrs[cnti].name) && attrs[cnti].value === target_attr.value) {
+                        obj.innerHTML = model.val;
+                    }
+                    else if (/^hc:text$/.test(attrs[cnti].name) && attrs[cnti].value === target_attr.value) {
+                        obj.innerText = model.val;
                     }
                 }
             }
@@ -555,8 +575,8 @@ class Hacci {
     
     //
     private setCheckedValue(groups: NodeListOf<Element>, value: any[]|any): boolean {
-        console.log(`setCheckedValue.#1 - value:->`);
-        console.log(value);
+        // console.log(`setCheckedValue.#1 - value:->`);
+        // console.log(value);
         //
         let rtn_val = false; // 변경 여부 반환
         //
@@ -566,12 +586,12 @@ class Hacci {
             //
             !has_checked && item.checked && (has_checked = true);
             //
-            if (Array.isArray(value)) {
-                console.log(`setCheckedValue.#2 - checked:${item.checked} / ${item.value} in ${JSON.stringify(value)}`);
-            }
-            else {
-                console.log(`setCheckedValue.#2 - checked:${item.checked} / ${item.value} is ${value}`);
-            }
+            // if (Array.isArray(value)) {
+            //     console.log(`setCheckedValue.#2 - checked:${item.checked} / ${item.value} in ${JSON.stringify(value)}`);
+            // }
+            // else {
+            //     console.log(`setCheckedValue.#2 - checked:${item.checked} / ${item.value} is ${value}`);
+            // }
             //
             !rtn_val && 
                 (
@@ -604,7 +624,7 @@ class Hacci {
             // }
         }
         !has_checked && !rtn_val && (rtn_val = true);
-        console.log(`setCheckedValue.proc - has_checked:${has_checked} / rtn_val:${rtn_val}`);
+        // console.log(`setCheckedValue.proc - has_checked:${has_checked} / rtn_val:${rtn_val}`);
         //
         for (let cntk: number = 0; cntk < groups.length; cntk++) {
             const item: HTMLInputElement = groups[cntk] as HTMLInputElement;
@@ -746,27 +766,27 @@ class Hacci {
         //
         target.push = function(...args) {
             Array.prototype.push.call(target, ...args);
-            console.log(`arrayEventListener.push`);
+            // console.log(`arrayEventListener.push`);
             traces.__listen(prop, target);
         },
         target.pop = function(...args) {
             Array.prototype.pop.call(target, ...args);
-            console.log(`arrayEventListener.pop`);
+            // console.log(`arrayEventListener.pop`);
             traces.__listen(prop, target);
         },
         target.splice = function(...args) {
             Array.prototype.splice.call(target, ...args);
-            console.log(`arrayEventListener.splice`);
+            // console.log(`arrayEventListener.splice`);
             traces.__listen(prop, target);
         },
         target.shift = function(...args) {
             Array.prototype.shift.call(target, ...args);
-            console.log(`arrayEventListener.shift`);
+            // console.log(`arrayEventListener.shift`);
             traces.__listen(prop, target);
         },
         target.unshift = function(...args) {
             Array.prototype.unshift.call(target, ...args);
-            console.log(`arrayEventListener.unshift`);
+            // console.log(`arrayEventListener.unshift`);
             traces.__listen(prop, target);
         }
     }
@@ -780,11 +800,12 @@ class Hacci {
         (['undefined', 'null'].indexOf(typeof option.parent) > -1) && 
             (option.parent = this);
 
+        // console.log(`traceModel - option:${JSON.stringify(option)}`);
         //
         !this._traces.model['__listen'] && 
             (
                 this._traces.model['__listen'] = function(property: string, value: any) {
-                    console.log(`listen - property:${property} / value:${value}`);
+                    console.log(`traceModel - listen - property:${property} / value:${value}`);
                     //
                     if (self._objs[property] && Array.isArray(self._objs[property])) {
                         for (let cnti: number = 0; cnti < self._objs[property].length; cnti++) {
@@ -863,6 +884,12 @@ class Hacci {
                                     });
                                     obj.parentNode.removeChild(obj);
                                 }
+                            }
+                            else if (/^hc:html$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
+                                obj.innerHTML = option.parent[option.property];
+                            }
+                            else if (/^hc:text$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
+                                obj.innerText = option.parent[option.property];
                             }
                             else if (/^hc:model$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
                                 //
@@ -1028,14 +1055,14 @@ class Hacci {
                 model.prop,
                 {
                     get: function() {
-                        console.log(`redefine - get - proc`);
+                        // console.log(`redefine - get - proc`);
                         const rtn_val = self.getVal(option.property, traces, '__').val;
-                        console.log(`redefine - get:->`);
-                        console.log(rtn_val);
+                        // console.log(`redefine - get:->`);
+                        // console.log(rtn_val);
                         return rtn_val
                     },
                     set: function(value: any) {
-                        console.log(`redefine - set - proc`);
+                        // console.log(`redefine - set - proc`);
                         // traceModel.parent[`__${model.prop}`] = value;
                         traceModel.parent[`__${model.prop}`] = value;
                         console.log(`redefine - set:->`);
