@@ -399,9 +399,10 @@ var Hacci = /** @class */ (function () {
     };
     Hacci.prototype.registEventListener = function (el, name, attr, listener) {
         if (listener === void 0) { listener = null; }
+        var self = this;
         //
         !listener &&
-            (listener = function (evt) { this.callMethod({ attr: attr, evt: evt }); });
+            (listener = function (evt) { self.callMethod({ attr: attr, evt: evt }); });
         //
         el.addEventListener(name, listener);
         //

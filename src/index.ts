@@ -362,9 +362,10 @@ class Hacci {
     }
 
     private registEventListener(el: Element, name: string, attr: any, listener: EventListenerOrEventListenerObject = null): void {
+        const self: Hacci = this;
         //
         !listener &&
-            (listener = function(evt: Event) { this.callMethod({ attr, evt }) });
+            (listener = function(evt: Event) { self.callMethod({ attr, evt }) });
         //
         el.addEventListener(name, listener);
         //
