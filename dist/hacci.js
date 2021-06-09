@@ -183,7 +183,7 @@ var Hacci = /** @class */ (function () {
                 // 1. attribute 처리
                 //
                 var attrs = obj['attributes'];
-                var _loop_2 = function (cnti_1) {
+                var _loop_3 = function (cnti_1) {
                     if (/^hc:(model|if|neither|html|text)$/.test(attrs[cnti_1].name)) {
                         //
                         this_1.traceModel({
@@ -302,7 +302,7 @@ var Hacci = /** @class */ (function () {
                 };
                 //
                 for (var cnti_1 = 0; cnti_1 < attrs.length; cnti_1++) {
-                    _loop_2(cnti_1);
+                    _loop_3(cnti_1);
                 }
                 // 2. text 처리
                 var text = obj.innerText;
@@ -312,21 +312,42 @@ var Hacci = /** @class */ (function () {
             for (var cnti = 0; cnti < objs.length; cnti++) {
                 _loop_1(cnti);
             }
-            //
-            for (var cnti = 0; cnti < objs.length; cnti++) {
+            var _loop_2 = function (cnti) {
                 var obj = objs[cnti];
                 //
                 var attrs = obj['attributes'];
-                //
-                for (var cnti_2 = 0; cnti_2 < attrs.length; cnti_2++) {
+                var _loop_4 = function (cnti_2) {
                     if (/^hc:/.test(attrs[cnti_2].name)) {
                         //
                         switch (attrs[cnti_2].name) {
                             case 'hc:ref':
-                                this._refs[attrs[cnti_2].value] = obj;
+                                this_2._refs[attrs[cnti_2].value] = obj;
                                 break;
                             case 'hc:click':
-                                this.registEventListener(obj, 'click', attrs[cnti_2]);
+                                this_2.registEventListener(obj, 'click', attrs[cnti_2]);
+                                break;
+                            case 'hc:scroll':
+                                this_2.registEventListener(obj, 'scroll', attrs[cnti_2]);
+                                break;
+                            case 'hc:scroll.hit.bottom':
+                                this_2.registEventListener(obj, 'scroll', attrs[cnti_2], function (evt) {
+                                    if (self.scrollTop(obj) + self.innerHeight(obj) >= self.scrollHeight(obj)) {
+                                        self.callMethod({
+                                            attr: attrs[cnti_2],
+                                            evt: evt
+                                        });
+                                    }
+                                });
+                                break;
+                            case 'hc:scroll.hit.top':
+                                this_2.registEventListener(obj, 'scroll', attrs[cnti_2], function (evt) {
+                                    if (self.scrollTop(obj) <= 0) {
+                                        self.callMethod({
+                                            attr: attrs[cnti_2],
+                                            evt: evt
+                                        });
+                                    }
+                                });
                                 break;
                             // case 'hc:text':
                             //     (obj as HTMLInputElement).innerText = this[attrs[cnti].value];
@@ -336,7 +357,16 @@ var Hacci = /** @class */ (function () {
                             //     break;
                         }
                     }
+                };
+                //
+                for (var cnti_2 = 0; cnti_2 < attrs.length; cnti_2++) {
+                    _loop_4(cnti_2);
                 }
+            };
+            var this_2 = this;
+            //
+            for (var cnti = 0; cnti < objs.length; cnti++) {
+                _loop_2(cnti);
             }
         }
         //
@@ -367,13 +397,11 @@ var Hacci = /** @class */ (function () {
             }
         }
     };
-    Hacci.prototype.registEventListener = function (el, name, attr) {
-        var _this = this;
+    Hacci.prototype.registEventListener = function (el, name, attr, listener) {
+        if (listener === void 0) { listener = null; }
         //
-        var listener = function (evt) {
-            //
-            _this.callMethod({ attr: attr, evt: evt });
-        };
+        !listener &&
+            (listener = function (evt) { this.callMethod({ attr: attr, evt: evt }); });
         //
         el.addEventListener(name, listener);
         //
@@ -992,6 +1020,23 @@ var Hacci = /** @class */ (function () {
                     traces.__listen(option.property, value);
                 }
             });
+    };
+    Hacci.prototype.scrollHeight = function (el) {
+        return el.nodeType === 9 ?
+            window.document.documentElement.scrollHeight :
+            el.scrollHeight;
+    };
+    Hacci.prototype.scrollTop = function (el) {
+        var rtn_val = el.nodeType === 9 ?
+            window.pageYOffset :
+            el.scrollTop;
+        return Math.ceil(rtn_val);
+    };
+    Hacci.prototype.innerHeight = function (el) {
+        var rtn_val = el.nodeType === 9 ?
+            Math.max(el.body.scrollHeight, el.documentElement.scrollHeight, el.body.offsetHeight, el.documentElement.offsetHeight, el.documentElement.clientHeight) :
+            el.clientHeight;
+        return Math.ceil(rtn_val);
     };
     /**
      * event로 특정된 이벤트에 대한 리스닝 처리 등록

@@ -272,7 +272,7 @@ class Hacci {
             }
             //
             for (let cnti = 0; cnti < objs.length; cnti++) {
-                const obj = objs[cnti] as HTMLInputElement;
+                const obj = objs[cnti];
                 //
                 const attrs = obj['attributes'];
                 //
@@ -284,7 +284,40 @@ class Hacci {
                                 this._refs[attrs[cnti].value] = obj;
                                 break;
                             case 'hc:click':
-                                this.registEventListener(obj, 'click', attrs[cnti]);
+                                this.registEventListener((obj as HTMLInputElement), 'click', attrs[cnti]);
+                                break;
+                            case 'hc:scroll':
+                                this.registEventListener((obj as HTMLInputElement), 'scroll', attrs[cnti]);
+                                break;
+                            case 'hc:scroll.hit.bottom':
+                                this.registEventListener(
+                                    obj as Element,
+                                    'scroll',
+                                    attrs[cnti],
+                                    function(evt: Event) {
+                                        if (self.scrollTop(obj as Element) + self.innerHeight(obj) >= self.scrollHeight(obj as Element)) {
+                                            self.callMethod({
+                                                attr: attrs[cnti],
+                                                evt
+                                            });
+                                        }
+                                    }
+                                );
+                                break;
+                            case 'hc:scroll.hit.top':
+                                this.registEventListener(
+                                    obj as Element,
+                                    'scroll',
+                                    attrs[cnti],
+                                    function(evt: Event) {
+                                        if (self.scrollTop(obj as Element) <= 0) {
+                                            self.callMethod({
+                                                attr: attrs[cnti],
+                                                evt
+                                            });
+                                        }
+                                    }
+                                );
                                 break;
                             // case 'hc:text':
                             //     (obj as HTMLInputElement).innerText = this[attrs[cnti].value];
@@ -328,12 +361,10 @@ class Hacci {
         }
     }
 
-    private registEventListener(el: Element, name: string, attr: any): void {
+    private registEventListener(el: Element, name: string, attr: any, listener: EventListenerOrEventListenerObject = null): void {
         //
-        const listener = (evt: Event) => {
-            //
-            this.callMethod({ attr, evt })
-        };
+        !listener &&
+            (listener = function(evt: Event) { this.callMethod({ attr, evt }) });
         //
         el.addEventListener(name, listener);
         //
@@ -1021,6 +1052,32 @@ class Hacci {
                     }
                 }
             );
+    }
+
+    private scrollHeight(el: Element): number {
+        return el.nodeType === 9 ?
+            window.document.documentElement.scrollHeight :
+            el.scrollHeight;
+    }
+
+    private scrollTop(el: Element): number {
+        const rtn_val = el.nodeType === 9 ?
+            window.pageYOffset :
+            el.scrollTop;
+        return Math.ceil(rtn_val);
+    }
+
+    private innerHeight(el: any): number {
+        const rtn_val = el.nodeType === 9 ? 
+            Math.max(
+                (el as Document).body.scrollHeight,
+                (el as Document).documentElement.scrollHeight,
+                (el as Document).body.offsetHeight,
+                (el as Document).documentElement.offsetHeight,
+                (el as Document).documentElement.clientHeight
+            ) :
+            (el as HTMLElement).clientHeight;
+        return Math.ceil(rtn_val);
     }
 
     /**

@@ -127,6 +127,9 @@ declare class Hacci {
      */
     private arrayEventListener;
     private traceModel;
+    private scrollHeight;
+    private scrollTop;
+    private innerHeight;
     /**
      * event로 특정된 이벤트에 대한 리스닝 처리 등록
      * @param event
