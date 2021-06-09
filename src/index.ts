@@ -46,11 +46,17 @@ class Hacci {
     ];
     private _toi_check = ['radio', 'checkbox'];
     private _toi_select = ['select-one', 'select-multiple'];
+    //
+    private _bus: any = {};
 
     static get instances() {
         return Hacci._instances;
     }
 
+    /**
+     * 생성자
+     * @param option 
+     */
     constructor(option: HacciOption|null = null) {
         //
         !option && (option = {
@@ -102,7 +108,10 @@ class Hacci {
         this._on && this._on.created && this._on.created();
     }
 
-    private init() {
+    /**
+     * 초기화
+     */
+    private init(): void {
         //
         const self = this;
         //
@@ -290,7 +299,10 @@ class Hacci {
         this._on && this._on.mounted && this._on.mounted();
     }
 
-    public refresh() {
+    /**
+     * HTML 변경된 경우 이를 반영시키기 위해 기존 자료 삭제 및 초기화 처리
+     */
+    public refresh(): void {
         //
         this.clearData();
         //
@@ -299,7 +311,10 @@ class Hacci {
         this.init();
     }
 
-    public clearData() {
+    /**
+     * model 정보 초기화
+     */
+    public clearData(): void {
         //
         const regx = new RegExp(/^__hc\.(v_.+|lstn$|refs$)/);
         //
@@ -311,7 +326,21 @@ class Hacci {
         }
     }
 
-    private clearEventListeners() {
+    private registEventListener(el: Element, name: string, attr: any): void {
+        //
+        const listener = (evt: Event) => {
+            //
+            this.callMethod({ attr, evt })
+        };
+        //
+        el.addEventListener(name, listener);
+        //
+        this._event_listeners.push({
+            el, name, listener,
+        });
+    }
+
+    private clearEventListeners(): void {
         //
         for (let cnti: number = 0; cnti < this._event_listeners.length; cnti++) {
             const listener: HacciEventListener = this._event_listeners[cnti];
@@ -321,7 +350,11 @@ class Hacci {
         this._event_listeners = [];
     }
 
-    private modelTrigger(el: Element) {
+    /**
+     * 대상 element의 change/input 등의 이벤트로 인한 변경시 연결된 model에 적용 처리
+     * @param el 
+     */
+    private modelTrigger(el: Element): void {
         let target_attr = null;
         let attrs = (el as HTMLInputElement)['attributes'];
         for (let cnti: number = 0; cnti < attrs.length; cnti++) {
@@ -434,21 +467,11 @@ class Hacci {
         }
     }
 
-    private registEventListener(el: Element, name: string, attr: any) {
-        //
-        const listener = (evt: Event) => {
-            //
-            this.callMethod({ attr, evt })
-        };
-        //
-        el.addEventListener(name, listener);
-        //
-        this._event_listeners.push({
-            el, name, listener,
-        });
-    }
-
-    private callMethod(option: any) {
+    /**
+     * hc:(change|event)에 지정된 method 호출 처리
+     * @param option 
+     */
+    private callMethod(option: any): void {
         // console.log(`callMethod - option:${JSON.stringify(option)}`);
         // const has_bracket = option.attr.value.includes('(');
         const has_bracket = option.attr.value.indexOf('(') > -1;
@@ -491,7 +514,11 @@ class Hacci {
     //     element.dispatchEvent(event);
     // }
     
-    private getRandomString(length: number) {
+    /**
+     * 숫자/영문대소문자 조합의 랜덤문자열 생성
+     * @param length 
+     */
+    private getRandomString(length: number): string {
         let rtn_val: string = '';
         for (let cnti: number = 0; cnti < length; cnti++) {
             const code = Math.floor(Math.random() * 51);
@@ -500,15 +527,26 @@ class Hacci {
         return rtn_val;
     }
 
-    private createInstanceId() {
+    /**
+     * 현재 객체의 id값 생성
+     */
+    private createInstanceId(): string {
         return this.getRandomString(8) + '_' + Date.now();
     }
 
-    private createTagId() {
+    /**
+     * comment 등 tag_id 만들기 위한 id값 생성
+     */
+    private createTagId(): string {
         // return `//hc:${this._id}:_tag_${this.getRandomString(4)}_${Date.now()}`;
         return `${this.getRandomString(6)}_${Date.now()}`;
     }
 
+    /**
+     * tag_id로 특정된 comment element 반환
+     * @param parent 
+     * @param tag_id 
+     */
     private getCommentElement(parent: Element, tag_id: string): Comment {
         let rtn_val = null;
         for (let cnti: number = 0; cnti < parent.childNodes.length; cnti++) {
@@ -521,12 +559,19 @@ class Hacci {
         return rtn_val;
     }
 
-    //
+    /**
+     * arrow function 여부 반환
+     * @param func 
+     */
     private isArrowFunc(func: Function): boolean {
         return typeof func.prototype === 'undefined';
     }
 
-    //
+    /**
+     * arrow function 을 일반 function 으로 변경 처리.
+     * (this 혼란 제거)
+     * @param func 
+     */
     private fromArrowFunc(func: Function): Function {
         if (this.isArrowFunc(func)) {
             // is arrow function
@@ -540,6 +585,11 @@ class Hacci {
         return func;
     }
 
+    /**
+     * radio/checkbox element에 대해 현재 checked된 값 반환
+     * @param groups 
+     * @param return_as_array true인 경우 배열로, 아니면 단일값 반환. name 속성으로 묶인 경우 true 사용
+     */
     private getCheckedValue(groups: NodeListOf<Element>, return_as_array: boolean = false) {
         let rtn_val: any = return_as_array ? [] : null;
         //
@@ -556,7 +606,12 @@ class Hacci {
         //
         return rtn_val;
     }
-    //
+    
+    /**
+     * select 하위 option element에 대해 현재 selected된 값 반환
+     * @param groups 
+     * @param return_as_array true인 경우 배열로, 아니면 단일값 반환. multiple인 경우 true 사용
+     */
     private getSelectedValue(groups: NodeListOf<Element>, return_as_array: boolean = false) {
         let rtn_val: any = return_as_array ? [] : null;
         //
@@ -574,10 +629,12 @@ class Hacci {
         return rtn_val;
     }
     
-    //
+    /**
+     * radio/checkbox element에 대해 지정된 값으로 checked 처리
+     * @param groups 
+     * @param value 
+     */
     private setCheckedValue(groups: NodeListOf<Element>, value: any[]|any): boolean {
-        // console.log(`setCheckedValue.#1 - value:->`);
-        // console.log(value);
         //
         let rtn_val = false; // 변경 여부 반환
         //
@@ -586,13 +643,6 @@ class Hacci {
             const item: HTMLInputElement = groups[cntk] as HTMLInputElement;
             //
             !has_checked && item.checked && (has_checked = true);
-            //
-            // if (Array.isArray(value)) {
-            //     console.log(`setCheckedValue.#2 - checked:${item.checked} / ${item.value} in ${JSON.stringify(value)}`);
-            // }
-            // else {
-            //     console.log(`setCheckedValue.#2 - checked:${item.checked} / ${item.value} is ${value}`);
-            // }
             //
             !rtn_val && 
                 (
@@ -612,17 +662,6 @@ class Hacci {
 
             //
             if (rtn_val) break;
-            
-            // if (Array.isArray(value)) {
-            //     // 변경 확인 처리
-            //     !rtn_val && item.checked && (value.indexOf(item.value) < 0) && (rtn_val = true);
-            //     // console.log(`setCheckedValue.1 - checked:${item.checked} / value:${value} / item.value:${item.value} / rtn_val:${rtn_val}`);
-            // }
-            // else {
-            //     // 변경 확인 처리
-            //     !rtn_val && item.checked && (value != item.value) && (rtn_val = true);
-            //     // console.log(`setCheckedValue.2 - checked:${item.checked} / value:${value} / item.value:${item.value} / rtn_val:${rtn_val}`);
-            // }
         }
         !has_checked && !rtn_val && (rtn_val = true);
         // console.log(`setCheckedValue.proc - has_checked:${has_checked} / rtn_val:${rtn_val}`);
@@ -633,20 +672,16 @@ class Hacci {
             item.checked = Array.isArray(value) ?
                 (value.indexOf(item.value) > -1) :
                 (value == item.value);
-            
-            // if (Array.isArray(value)) {
-            //     //
-            //     item.checked = value.indexOf(item.value) > -1;
-            // }
-            // else {
-            //     //
-            //     item.checked = value == item.value;
-            // }
         }
         //
         return rtn_val;
     }
-    //
+    
+    /**
+     * select 하위 option element에 대해 지정된 값으로 selected 처리
+     * @param groups 
+     * @param value 
+     */
     private setSelectedValue(groups: NodeListOf<Element>, value: any[]|any): boolean {
         // console.log(`setSelectedValue - value:${JSON.stringify(value)}`);
         //
@@ -673,17 +708,6 @@ class Hacci {
                     )
                 ) && 
                 (rtn_val = true);
-            
-            // if (Array.isArray(value)) {
-            //     // 변경 확인 처리
-            //     !rtn_val && item.selected && (value.indexOf(item.value) < 0) && (rtn_val = true);
-            //     // console.log(`setSelectedValue.1 - selected:${item.selected} / value:${value} / item.value:${item.value} / rtn_val:${rtn_val}`);
-            // }
-            // else {
-            //     // 변경 확인 처리
-            //     !rtn_val && item.selected && (value != item.value) && (rtn_val = true);
-            //     // console.log(`setSelectedValue.2 - selected:${item.selected} / value:${value} / item.value:${item.value} / rtn_val:${rtn_val}`);
-            // }
 
             //
             if (rtn_val) break;
@@ -696,20 +720,17 @@ class Hacci {
             item.selected = Array.isArray(value) ?
                 (value.indexOf(item.value) > -1) :
                 (value == item.value);
-            
-            // if (Array.isArray(value)) {
-            //     //
-            //     item.selected = value.indexOf(item.value) > -1;
-            // }
-            // else {
-            //     //
-            //     item.selected = value == item.value;
-            // }
         }
         //
         return rtn_val;
     }
 
+    /**
+     * model값 반환
+     * @param val 
+     * @param init_parent 
+     * @param prefix 
+     */
     private getVal(val: any, init_parent: any, prefix: string = ''): any {
         //
         if ((new RegExp(/^(true|false|'.+'|\d+)$/)).test(val)) {
@@ -742,8 +763,14 @@ class Hacci {
         //
         return rtn_val;
     }
-    //
-    private setVal(target: any, val: any, init_parent: any) {
+
+    /**
+     * model 값 설정
+     * @param target 
+     * @param val 
+     * @param init_parent 
+     */
+    private setVal(target: any, val: any, init_parent: any): void {
         let parent = init_parent;
         //
         const strs: string[] = target.split('.');
@@ -760,39 +787,44 @@ class Hacci {
         }
     }
 
-    private arrayEventListener = function(prop, target) {
+    /**
+     * Array 값 수정이 발생한 경우 감지를 위한 이벤트 처리
+     * @param prop 
+     * @param target 
+     */
+    private arrayEventListener = function(prop: string, target: Array<any>): void {
         //
         const traces = this._traces.model;
 
         //
-        target.push = function(...args) {
-            Array.prototype.push.call(target, ...args);
-            // console.log(`arrayEventListener.push`);
+        target.push = function(...args): number {
+            const rtn_val: number = Array.prototype.push.call(target, ...args);
             traces.__listen(prop, target);
+            return rtn_val;
         },
-        target.pop = function(...args) {
-            Array.prototype.pop.call(target, ...args);
-            // console.log(`arrayEventListener.pop`);
+        target.pop = function(...args): any {
+            const rtn_val: any = Array.prototype.pop.call(target, ...args);
             traces.__listen(prop, target);
+            return rtn_val;
         },
-        target.splice = function(...args) {
-            Array.prototype.splice.call(target, ...args);
-            // console.log(`arrayEventListener.splice`);
+        target.splice = function(...args): any[] {
+            const rtn_val: any[] = Array.prototype.splice.call(target, ...args);
             traces.__listen(prop, target);
+            return rtn_val;
         },
-        target.shift = function(...args) {
-            Array.prototype.shift.call(target, ...args);
-            // console.log(`arrayEventListener.shift`);
+        target.shift = function(...args): any {
+            const rtn_val: any = Array.prototype.shift.call(target, ...args);
             traces.__listen(prop, target);
+            return rtn_val;
         },
-        target.unshift = function(...args) {
-            Array.prototype.unshift.call(target, ...args);
-            // console.log(`arrayEventListener.unshift`);
+        target.unshift = function(...args): number {
+            const rtn_val: number = Array.prototype.unshift.call(target, ...args);
             traces.__listen(prop, target);
+            return rtn_val;
         }
     }
 
-    private traceModel(option: HacciTraceModelOption) {
+    private traceModel(option: HacciTraceModelOption): void {
         //
         if ((new RegExp(/^(true|false|'.+'|\d+)$/)).test(option.property)) return;
         //
@@ -960,91 +992,12 @@ class Hacci {
                             }
                         }
                     }
-                    //
-                    // console.log(`traceModel - commit_events:->`);
-                    // console.log(commit_events);
-                    // for (let cnti: number = 0; cnti < commit_events.change.length; cnti++) {
-                    //     self.commitEvent(commit_events.change[cnti], 'change');
-                    // }
-                    // for (let cnti: number = 0; cnti < commit_events.input.length; cnti++) {
-                    //     self.commitEvent(commit_events.input[cnti], 'input');
-                    // }
                 }
             );
         const traces = this._traces.model;
         const model = this.getVal(option.property, this);
         this.setVal(option.property, model.val, traces);
         const traceModel = this.getVal(option.property, traces, '__');
-
-        //
-        // const redefineArray = function(obj) {
-        //     Object.defineProperty(obj, 'push', {
-        //         enumerable: false,
-        //         configurable: true,
-        //         writable: true,
-        //         value: function (...args) {
-        //             //
-        //             console.log(`redefine - Array.push - proc`);
-        //             console.log(`redefine - Array.push - traceModel:->`);
-        //             console.log(traceModel);
-        //             const rtn_val = Array.prototype.push.apply(traceModel.parent[traceModel.prop], args);
-        //             //
-        //             // Array.prototype.push.apply(this, args);
-        //             // const rtn_val = Array.prototype.push.apply(traceModel.parent[`__${model.prop}`], args);
-        //             // console.log(`redefine - Array.push - obj:->`);
-        //             // console.log(obj);
-        //             // traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
-        //             traces.__listen(option.property, traceModel.parent[traceModel.prop]);
-        //             return rtn_val;
-        //         }
-        //     });
-        //     Object.defineProperty(obj, 'splice', {
-        //         enumerable: false,
-        //         configurable: true,
-        //         writable: true,
-        //         value: function (...args) {
-        //             console.log(`redefine - Array.splice - proc`);
-        //             // Array.prototype.splice.apply(this, args);
-        //             const rtn_val = Array.prototype.splice.apply(traceModel.parent[traceModel.prop], args);
-        //             // console.log(`option.property:${option.property}`);
-        //             // traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
-        //             traces.__listen(option.property, traceModel.parent[traceModel.prop]);
-        //             return rtn_val;
-        //         }
-        //     });
-        // };
-
-        //
-        // Array.isArray(model.parent[model.prop]) && redefineArray(model.parent[model.prop]);
-        //
-        // if (Array.isArray(model.parent[model.prop])) {
-        //     Object.defineProperty(model.parent[model.prop], 'push', {
-        //         enumerable: false,
-        //         configurable: true,
-        //         writable: true,
-        //         value: function (...args) {
-        //             // const rtn_val = Array.prototype.push.apply(this, args);
-        //             const rtn_val = Array.prototype.push.apply(traceModel.parent[`__${model.prop}`], args);
-        //             // console.log(`option.property:${option.property}`);
-        //             traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
-        //             // traces.__listen(option.property, this);
-        //             return rtn_val;
-        //         }
-        //     });
-        //     Object.defineProperty(model.parent[model.prop], 'splice', {
-        //         enumerable: false,
-        //         configurable: true,
-        //         writable: true,
-        //         value: function (...args) {
-        //             // const rtn_val = Array.prototype.splice.apply(this, args);
-        //             const rtn_val = Array.prototype.splice.apply(traceModel.parent[`__${model.prop}`], args);
-        //             // console.log(`option.property:${option.property}`);
-        //             traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
-        //             // traces.__listen(option.property, this);
-        //             return rtn_val;
-        //         }
-        //     });
-        // }
 
         //
         Array.isArray(model.parent[model.prop]) && this.arrayEventListener(option.property, model.parent[model.prop]);
@@ -1056,29 +1009,69 @@ class Hacci {
                 model.prop,
                 {
                     get: function() {
-                        // console.log(`redefine - get - proc`);
                         const rtn_val = self.getVal(option.property, traces, '__').val;
-                        // console.log(`redefine - get:->`);
-                        // console.log(rtn_val);
                         return rtn_val
                     },
                     set: function(value: any) {
-                        // console.log(`redefine - set - proc`);
-                        // traceModel.parent[`__${model.prop}`] = value;
                         traceModel.parent[`__${model.prop}`] = value;
-                        // console.log(`redefine - set:->`);
-                        // console.log(traceModel.parent[`__${model.prop}`]);
-                        //
-                        // Array.isArray(value) && redefineArray(value);
-                        //
                         Array.isArray(value) && self.arrayEventListener(option.property, value);
-                        //
                         traces.__listen(option.property, value);
                     }
                 }
             );
     }
 
+    /**
+     * event로 특정된 이벤트에 대한 리스닝 처리 등록
+     * @param event 
+     * @param callback 
+     */
+    public on(event: string, callback: Function): void {
+        !this._bus[event] && (this._bus[event] = []);
+        //
+        if (this._bus[event].indexOf(callback) > -1) return;
+        //
+        this._bus[event].push(callback);
+    }
+
+    /**
+     * event로 특정된 이벤트에 대한 리스닝 처리 삭제
+     * @param event 
+     * @param callback null이면 event 전체 삭제 처리
+     */
+    public off(event: string, callback: Function = null): void {
+        if (this._bus[event] && !callback) {
+            delete this._bus[event];
+        }
+        else if (this._bus[event] && callback) {
+            const idx = this._bus[event].indexOf(callback);
+            if (idx > -1) {
+                this._bus[event].splice(idx, 1);
+            }
+        }
+    }
+
+    /**
+     * event로 특정된 이벤트 호출 처리
+     * @param event
+     * @param args 
+     */
+    public emit(event: string, ...args: any[]): number {
+        if (!this._bus[event]) return 0;
+        let rtn_val: number = 0;
+        for (let cnti: number = 0; cnti < this._bus[event].length; cnti++) {
+            try {
+                this._bus[event][cnti](...args);
+                rtn_val++;
+            }
+            catch (e) {}
+        }
+        return rtn_val;
+    }
+
+    /**
+     * Hacci 객체 삭제
+     */
     public destroy() {
         //
         this.clearEventListeners();
@@ -1104,7 +1097,10 @@ class Hacci {
         }
     }
 
-    //
+    /**
+     * 대상 Element에 대해 Hacci 기능 사용을 위한 처리를 진행합니다. mount 후에 mounted 이벤트가 발생합니다.
+     * @param el 생성자에서 선언하지 않은 경우 한정하여 사용
+     */
     public mount(el: Element|null): Hacci {
         el && (this._el = el);
         //

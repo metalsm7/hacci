@@ -1,6 +1,10 @@
 "use strict";
 // Object.defineProperty(exports, "__esModule", { value: true });
 var Hacci = /** @class */ (function () {
+    /**
+     * 생성자
+     * @param option
+     */
     function Hacci(option) {
         if (option === void 0) { option = null; }
         //
@@ -27,6 +31,13 @@ var Hacci = /** @class */ (function () {
         ];
         this._toi_check = ['radio', 'checkbox'];
         this._toi_select = ['select-one', 'select-multiple'];
+        //
+        this._bus = {};
+        /**
+         * Array 값 수정이 발생한 경우 감지를 위한 이벤트 처리
+         * @param prop
+         * @param target
+         */
         this.arrayEventListener = function (prop, target) {
             //
             var traces = this._traces.model;
@@ -37,9 +48,9 @@ var Hacci = /** @class */ (function () {
                     args[_i] = arguments[_i];
                 }
                 var _a;
-                (_a = Array.prototype.push).call.apply(_a, [target].concat(args));
-                // console.log(`arrayEventListener.push`);
+                var rtn_val = (_a = Array.prototype.push).call.apply(_a, [target].concat(args));
                 traces.__listen(prop, target);
+                return rtn_val;
             },
                 target.pop = function () {
                     var args = [];
@@ -47,9 +58,9 @@ var Hacci = /** @class */ (function () {
                         args[_i] = arguments[_i];
                     }
                     var _a;
-                    (_a = Array.prototype.pop).call.apply(_a, [target].concat(args));
-                    // console.log(`arrayEventListener.pop`);
+                    var rtn_val = (_a = Array.prototype.pop).call.apply(_a, [target].concat(args));
                     traces.__listen(prop, target);
+                    return rtn_val;
                 },
                 target.splice = function () {
                     var args = [];
@@ -57,9 +68,9 @@ var Hacci = /** @class */ (function () {
                         args[_i] = arguments[_i];
                     }
                     var _a;
-                    (_a = Array.prototype.splice).call.apply(_a, [target].concat(args));
-                    // console.log(`arrayEventListener.splice`);
+                    var rtn_val = (_a = Array.prototype.splice).call.apply(_a, [target].concat(args));
                     traces.__listen(prop, target);
+                    return rtn_val;
                 },
                 target.shift = function () {
                     var args = [];
@@ -67,9 +78,9 @@ var Hacci = /** @class */ (function () {
                         args[_i] = arguments[_i];
                     }
                     var _a;
-                    (_a = Array.prototype.shift).call.apply(_a, [target].concat(args));
-                    // console.log(`arrayEventListener.shift`);
+                    var rtn_val = (_a = Array.prototype.shift).call.apply(_a, [target].concat(args));
                     traces.__listen(prop, target);
+                    return rtn_val;
                 },
                 target.unshift = function () {
                     var args = [];
@@ -77,9 +88,9 @@ var Hacci = /** @class */ (function () {
                         args[_i] = arguments[_i];
                     }
                     var _a;
-                    (_a = Array.prototype.unshift).call.apply(_a, [target].concat(args));
-                    // console.log(`arrayEventListener.unshift`);
+                    var rtn_val = (_a = Array.prototype.unshift).call.apply(_a, [target].concat(args));
                     traces.__listen(prop, target);
+                    return rtn_val;
                 };
         };
         //
@@ -136,6 +147,9 @@ var Hacci = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    /**
+     * 초기화
+     */
     Hacci.prototype.init = function () {
         var _this = this;
         //
@@ -326,6 +340,9 @@ var Hacci = /** @class */ (function () {
         //
         this._on && this._on.mounted && this._on.mounted();
     };
+    /**
+     * HTML 변경된 경우 이를 반영시키기 위해 기존 자료 삭제 및 초기화 처리
+     */
     Hacci.prototype.refresh = function () {
         //
         this.clearData();
@@ -334,6 +351,9 @@ var Hacci = /** @class */ (function () {
         //
         this.init();
     };
+    /**
+     * model 정보 초기화
+     */
     Hacci.prototype.clearData = function () {
         //
         var regx = new RegExp(/^__hc\.(v_.+|lstn$|refs$)/);
@@ -345,6 +365,20 @@ var Hacci = /** @class */ (function () {
             }
         }
     };
+    Hacci.prototype.registEventListener = function (el, name, attr) {
+        var _this = this;
+        //
+        var listener = function (evt) {
+            //
+            _this.callMethod({ attr: attr, evt: evt });
+        };
+        //
+        el.addEventListener(name, listener);
+        //
+        this._event_listeners.push({
+            el: el, name: name, listener: listener,
+        });
+    };
     Hacci.prototype.clearEventListeners = function () {
         //
         for (var cnti = 0; cnti < this._event_listeners.length; cnti++) {
@@ -354,6 +388,10 @@ var Hacci = /** @class */ (function () {
         //
         this._event_listeners = [];
     };
+    /**
+     * 대상 element의 change/input 등의 이벤트로 인한 변경시 연결된 model에 적용 처리
+     * @param el
+     */
     Hacci.prototype.modelTrigger = function (el) {
         var target_attr = null;
         var attrs = el['attributes'];
@@ -466,20 +504,10 @@ var Hacci = /** @class */ (function () {
             }
         }
     };
-    Hacci.prototype.registEventListener = function (el, name, attr) {
-        var _this = this;
-        //
-        var listener = function (evt) {
-            //
-            _this.callMethod({ attr: attr, evt: evt });
-        };
-        //
-        el.addEventListener(name, listener);
-        //
-        this._event_listeners.push({
-            el: el, name: name, listener: listener,
-        });
-    };
+    /**
+     * hc:(change|event)에 지정된 method 호출 처리
+     * @param option
+     */
     Hacci.prototype.callMethod = function (option) {
         // console.log(`callMethod - option:${JSON.stringify(option)}`);
         // const has_bracket = option.attr.value.includes('(');
@@ -521,6 +549,10 @@ var Hacci = /** @class */ (function () {
     //     //
     //     element.dispatchEvent(event);
     // }
+    /**
+     * 숫자/영문대소문자 조합의 랜덤문자열 생성
+     * @param length
+     */
     Hacci.prototype.getRandomString = function (length) {
         var rtn_val = '';
         for (var cnti = 0; cnti < length; cnti++) {
@@ -529,13 +561,24 @@ var Hacci = /** @class */ (function () {
         }
         return rtn_val;
     };
+    /**
+     * 현재 객체의 id값 생성
+     */
     Hacci.prototype.createInstanceId = function () {
         return this.getRandomString(8) + '_' + Date.now();
     };
+    /**
+     * comment 등 tag_id 만들기 위한 id값 생성
+     */
     Hacci.prototype.createTagId = function () {
         // return `//hc:${this._id}:_tag_${this.getRandomString(4)}_${Date.now()}`;
         return this.getRandomString(6) + "_" + Date.now();
     };
+    /**
+     * tag_id로 특정된 comment element 반환
+     * @param parent
+     * @param tag_id
+     */
     Hacci.prototype.getCommentElement = function (parent, tag_id) {
         var rtn_val = null;
         for (var cnti = 0; cnti < parent.childNodes.length; cnti++) {
@@ -547,11 +590,18 @@ var Hacci = /** @class */ (function () {
         }
         return rtn_val;
     };
-    //
+    /**
+     * arrow function 여부 반환
+     * @param func
+     */
     Hacci.prototype.isArrowFunc = function (func) {
         return typeof func.prototype === 'undefined';
     };
-    //
+    /**
+     * arrow function 을 일반 function 으로 변경 처리.
+     * (this 혼란 제거)
+     * @param func
+     */
     Hacci.prototype.fromArrowFunc = function (func) {
         if (this.isArrowFunc(func)) {
             // is arrow function
@@ -564,6 +614,11 @@ var Hacci = /** @class */ (function () {
         }
         return func;
     };
+    /**
+     * radio/checkbox element에 대해 현재 checked된 값 반환
+     * @param groups
+     * @param return_as_array true인 경우 배열로, 아니면 단일값 반환. name 속성으로 묶인 경우 true 사용
+     */
     Hacci.prototype.getCheckedValue = function (groups, return_as_array) {
         if (return_as_array === void 0) { return_as_array = false; }
         var rtn_val = return_as_array ? [] : null;
@@ -581,7 +636,11 @@ var Hacci = /** @class */ (function () {
         //
         return rtn_val;
     };
-    //
+    /**
+     * select 하위 option element에 대해 현재 selected된 값 반환
+     * @param groups
+     * @param return_as_array true인 경우 배열로, 아니면 단일값 반환. multiple인 경우 true 사용
+     */
     Hacci.prototype.getSelectedValue = function (groups, return_as_array) {
         if (return_as_array === void 0) { return_as_array = false; }
         var rtn_val = return_as_array ? [] : null;
@@ -599,10 +658,12 @@ var Hacci = /** @class */ (function () {
         //
         return rtn_val;
     };
-    //
+    /**
+     * radio/checkbox element에 대해 지정된 값으로 checked 처리
+     * @param groups
+     * @param value
+     */
     Hacci.prototype.setCheckedValue = function (groups, value) {
-        // console.log(`setCheckedValue.#1 - value:->`);
-        // console.log(value);
         //
         var rtn_val = false; // 변경 여부 반환
         //
@@ -611,13 +672,6 @@ var Hacci = /** @class */ (function () {
             var item = groups[cntk];
             //
             !has_checked && item.checked && (has_checked = true);
-            //
-            // if (Array.isArray(value)) {
-            //     console.log(`setCheckedValue.#2 - checked:${item.checked} / ${item.value} in ${JSON.stringify(value)}`);
-            // }
-            // else {
-            //     console.log(`setCheckedValue.#2 - checked:${item.checked} / ${item.value} is ${value}`);
-            // }
             //
             !rtn_val &&
                 (item.checked &&
@@ -633,16 +687,6 @@ var Hacci = /** @class */ (function () {
             //
             if (rtn_val)
                 break;
-            // if (Array.isArray(value)) {
-            //     // 변경 확인 처리
-            //     !rtn_val && item.checked && (value.indexOf(item.value) < 0) && (rtn_val = true);
-            //     // console.log(`setCheckedValue.1 - checked:${item.checked} / value:${value} / item.value:${item.value} / rtn_val:${rtn_val}`);
-            // }
-            // else {
-            //     // 변경 확인 처리
-            //     !rtn_val && item.checked && (value != item.value) && (rtn_val = true);
-            //     // console.log(`setCheckedValue.2 - checked:${item.checked} / value:${value} / item.value:${item.value} / rtn_val:${rtn_val}`);
-            // }
         }
         !has_checked && !rtn_val && (rtn_val = true);
         // console.log(`setCheckedValue.proc - has_checked:${has_checked} / rtn_val:${rtn_val}`);
@@ -653,19 +697,15 @@ var Hacci = /** @class */ (function () {
             item.checked = Array.isArray(value) ?
                 (value.indexOf(item.value) > -1) :
                 (value == item.value);
-            // if (Array.isArray(value)) {
-            //     //
-            //     item.checked = value.indexOf(item.value) > -1;
-            // }
-            // else {
-            //     //
-            //     item.checked = value == item.value;
-            // }
         }
         //
         return rtn_val;
     };
-    //
+    /**
+     * select 하위 option element에 대해 지정된 값으로 selected 처리
+     * @param groups
+     * @param value
+     */
     Hacci.prototype.setSelectedValue = function (groups, value) {
         // console.log(`setSelectedValue - value:${JSON.stringify(value)}`);
         //
@@ -688,16 +728,6 @@ var Hacci = /** @class */ (function () {
                                 (value.indexOf(item.value) > -1) :
                                 (value == item.value))) &&
                 (rtn_val = true);
-            // if (Array.isArray(value)) {
-            //     // 변경 확인 처리
-            //     !rtn_val && item.selected && (value.indexOf(item.value) < 0) && (rtn_val = true);
-            //     // console.log(`setSelectedValue.1 - selected:${item.selected} / value:${value} / item.value:${item.value} / rtn_val:${rtn_val}`);
-            // }
-            // else {
-            //     // 변경 확인 처리
-            //     !rtn_val && item.selected && (value != item.value) && (rtn_val = true);
-            //     // console.log(`setSelectedValue.2 - selected:${item.selected} / value:${value} / item.value:${item.value} / rtn_val:${rtn_val}`);
-            // }
             //
             if (rtn_val)
                 break;
@@ -710,18 +740,16 @@ var Hacci = /** @class */ (function () {
             item.selected = Array.isArray(value) ?
                 (value.indexOf(item.value) > -1) :
                 (value == item.value);
-            // if (Array.isArray(value)) {
-            //     //
-            //     item.selected = value.indexOf(item.value) > -1;
-            // }
-            // else {
-            //     //
-            //     item.selected = value == item.value;
-            // }
         }
         //
         return rtn_val;
     };
+    /**
+     * model값 반환
+     * @param val
+     * @param init_parent
+     * @param prefix
+     */
     Hacci.prototype.getVal = function (val, init_parent, prefix) {
         if (prefix === void 0) { prefix = ''; }
         //
@@ -755,7 +783,12 @@ var Hacci = /** @class */ (function () {
         //
         return rtn_val;
     };
-    //
+    /**
+     * model 값 설정
+     * @param target
+     * @param val
+     * @param init_parent
+     */
     Hacci.prototype.setVal = function (target, val, init_parent) {
         var parent = init_parent;
         //
@@ -937,115 +970,83 @@ var Hacci = /** @class */ (function () {
                         }
                     }
                 }
-                //
-                // console.log(`traceModel - commit_events:->`);
-                // console.log(commit_events);
-                // for (let cnti: number = 0; cnti < commit_events.change.length; cnti++) {
-                //     self.commitEvent(commit_events.change[cnti], 'change');
-                // }
-                // for (let cnti: number = 0; cnti < commit_events.input.length; cnti++) {
-                //     self.commitEvent(commit_events.input[cnti], 'input');
-                // }
             });
         var traces = this._traces.model;
         var model = this.getVal(option.property, this);
         this.setVal(option.property, model.val, traces);
         var traceModel = this.getVal(option.property, traces, '__');
         //
-        // const redefineArray = function(obj) {
-        //     Object.defineProperty(obj, 'push', {
-        //         enumerable: false,
-        //         configurable: true,
-        //         writable: true,
-        //         value: function (...args) {
-        //             //
-        //             console.log(`redefine - Array.push - proc`);
-        //             console.log(`redefine - Array.push - traceModel:->`);
-        //             console.log(traceModel);
-        //             const rtn_val = Array.prototype.push.apply(traceModel.parent[traceModel.prop], args);
-        //             //
-        //             // Array.prototype.push.apply(this, args);
-        //             // const rtn_val = Array.prototype.push.apply(traceModel.parent[`__${model.prop}`], args);
-        //             // console.log(`redefine - Array.push - obj:->`);
-        //             // console.log(obj);
-        //             // traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
-        //             traces.__listen(option.property, traceModel.parent[traceModel.prop]);
-        //             return rtn_val;
-        //         }
-        //     });
-        //     Object.defineProperty(obj, 'splice', {
-        //         enumerable: false,
-        //         configurable: true,
-        //         writable: true,
-        //         value: function (...args) {
-        //             console.log(`redefine - Array.splice - proc`);
-        //             // Array.prototype.splice.apply(this, args);
-        //             const rtn_val = Array.prototype.splice.apply(traceModel.parent[traceModel.prop], args);
-        //             // console.log(`option.property:${option.property}`);
-        //             // traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
-        //             traces.__listen(option.property, traceModel.parent[traceModel.prop]);
-        //             return rtn_val;
-        //         }
-        //     });
-        // };
-        //
-        // Array.isArray(model.parent[model.prop]) && redefineArray(model.parent[model.prop]);
-        //
-        // if (Array.isArray(model.parent[model.prop])) {
-        //     Object.defineProperty(model.parent[model.prop], 'push', {
-        //         enumerable: false,
-        //         configurable: true,
-        //         writable: true,
-        //         value: function (...args) {
-        //             // const rtn_val = Array.prototype.push.apply(this, args);
-        //             const rtn_val = Array.prototype.push.apply(traceModel.parent[`__${model.prop}`], args);
-        //             // console.log(`option.property:${option.property}`);
-        //             traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
-        //             // traces.__listen(option.property, this);
-        //             return rtn_val;
-        //         }
-        //     });
-        //     Object.defineProperty(model.parent[model.prop], 'splice', {
-        //         enumerable: false,
-        //         configurable: true,
-        //         writable: true,
-        //         value: function (...args) {
-        //             // const rtn_val = Array.prototype.splice.apply(this, args);
-        //             const rtn_val = Array.prototype.splice.apply(traceModel.parent[`__${model.prop}`], args);
-        //             // console.log(`option.property:${option.property}`);
-        //             traces.__listen(option.property, traceModel.parent[`__${model.prop}`]);
-        //             // traces.__listen(option.property, this);
-        //             return rtn_val;
-        //         }
-        //     });
-        // }
-        //
         Array.isArray(model.parent[model.prop]) && this.arrayEventListener(option.property, model.parent[model.prop]);
         //
         model.parent && model.prop &&
             Object.defineProperty(model.parent, model.prop, {
                 get: function () {
-                    // console.log(`redefine - get - proc`);
                     var rtn_val = self.getVal(option.property, traces, '__').val;
-                    // console.log(`redefine - get:->`);
-                    // console.log(rtn_val);
                     return rtn_val;
                 },
                 set: function (value) {
-                    // console.log(`redefine - set - proc`);
-                    // traceModel.parent[`__${model.prop}`] = value;
                     traceModel.parent["__" + model.prop] = value;
-                    // console.log(`redefine - set:->`);
-                    // console.log(traceModel.parent[`__${model.prop}`]);
-                    //
-                    // Array.isArray(value) && redefineArray(value);
-                    //
                     Array.isArray(value) && self.arrayEventListener(option.property, value);
-                    //
                     traces.__listen(option.property, value);
                 }
             });
     };
+    /**
+     * event로 특정된 이벤트에 대한 리스닝 처리 등록
+     * @param event
+     * @param callback
+     */
+    Hacci.prototype.on = function (event, callback) {
+        !this._bus[event] && (this._bus[event] = []);
+        //
+        if (this._bus[event].indexOf(callback) > -1)
+            return;
+        //
+        this._bus[event].push(callback);
+    };
+    /**
+     * event로 특정된 이벤트에 대한 리스닝 처리 삭제
+     * @param event
+     * @param callback null이면 event 전체 삭제 처리
+     */
+    Hacci.prototype.off = function (event, callback) {
+        if (callback === void 0) { callback = null; }
+        if (this._bus[event] && !callback) {
+            delete this._bus[event];
+        }
+        else if (this._bus[event] && callback) {
+            var idx = this._bus[event].indexOf(callback);
+            if (idx > -1) {
+                this._bus[event].splice(idx, 1);
+            }
+        }
+    };
+    /**
+     * event로 특정된 이벤트 호출 처리
+     * @param event
+     * @param args
+     */
+    Hacci.prototype.emit = function (event) {
+        var args = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            args[_i - 1] = arguments[_i];
+        }
+        var _a;
+        if (!this._bus[event])
+            return 0;
+        var rtn_val = 0;
+        for (var cnti = 0; cnti < this._bus[event].length; cnti++) {
+            try {
+                (_a = this._bus[event])[cnti].apply(_a, args);
+                rtn_val++;
+            }
+            catch (e) { }
+        }
+        return rtn_val;
+    };
+    /**
+     * Hacci 객체 삭제
+     */
     Hacci.prototype.destroy = function () {
         //
         this.clearEventListeners();
@@ -1070,7 +1071,10 @@ var Hacci = /** @class */ (function () {
             delete Hacci.instances[this._id];
         }
     };
-    //
+    /**
+     * 대상 Element에 대해 Hacci 기능 사용을 위한 처리를 진행합니다. mount 후에 mounted 이벤트가 발생합니다.
+     * @param el 생성자에서 선언하지 않은 경우 한정하여 사용
+     */
     Hacci.prototype.mount = function (el) {
         el && (this._el = el);
         //
