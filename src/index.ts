@@ -459,7 +459,8 @@ class Hacci {
         //
         if (has_bracket) {
             // has arguments
-            const args = option.attr.value.replace(/^\w*\(/, '').replace(/\)$/, '').split(',');
+            // const args = option.attr.value.replace(/^\w*\(/, '').replace(/\)$/, '').split(',');
+            const args = option.attr.value.replace(/^\w*\(/, '').replace(/\)$/, '').split(/,(?=(?:(?:[^']*'){2})*[^']*$)/);
             args.forEach((el, idx) => {
                 let new_el = el.replace(/^\s*/, '').replace(/\s*$/, '');
                 args[idx] = new_el === '_event' ? option.evt : eval(new_el);
@@ -805,7 +806,7 @@ class Hacci {
         !this._traces.model['__listen'] && 
             (
                 this._traces.model['__listen'] = function(property: string, value: any) {
-                    console.log(`traceModel - listen - property:${property} / value:${value}`);
+                    // console.log(`traceModel - listen - property:${property} / value:${value}`);
                     //
                     if (self._objs[property] && Array.isArray(self._objs[property])) {
                         for (let cnti: number = 0; cnti < self._objs[property].length; cnti++) {
@@ -1065,8 +1066,8 @@ class Hacci {
                         // console.log(`redefine - set - proc`);
                         // traceModel.parent[`__${model.prop}`] = value;
                         traceModel.parent[`__${model.prop}`] = value;
-                        console.log(`redefine - set:->`);
-                        console.log(traceModel.parent[`__${model.prop}`]);
+                        // console.log(`redefine - set:->`);
+                        // console.log(traceModel.parent[`__${model.prop}`]);
                         //
                         // Array.isArray(value) && redefineArray(value);
                         //
