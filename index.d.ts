@@ -158,3 +158,4 @@ declare class Hacci {
     readonly refs: any;
 }
 export { Hacci };
+export default Hacci;

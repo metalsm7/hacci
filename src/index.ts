@@ -216,7 +216,8 @@ class Hacci {
                                     obj.checked = obj.value == model.val;
                                 }
                                 //
-                                Array.isArray(checked_value) && self.arrayEventListener(model.prop, checked_value);
+                                // Array.isArray(checked_value) && self.arrayEventListener(model.prop, checked_value);
+                                Array.isArray(checked_value) && self.arrayEventListener(attrs[cnti].value, checked_value);
                                 //
                                 const target_obj = self.getVal(attrs[cnti].value, self._traces.model, '__');
                                 target_obj.parent[target_obj.prop] = checked_value;
@@ -238,7 +239,8 @@ class Hacci {
                                 const groups = obj.querySelectorAll(`option`);
                                 checked_value = self.getSelectedValue(groups, obj.type === 'select-multiple');
                                 //
-                                Array.isArray(checked_value) && self.arrayEventListener(model.prop, checked_value);
+                                // Array.isArray(checked_value) && self.arrayEventListener(model.prop, checked_value);
+                                Array.isArray(checked_value) && self.arrayEventListener(attrs[cnti].value, checked_value);
                                 //
                                 const target_obj = self.getVal(attrs[cnti].value, self._traces.model, '__');
                                 target_obj.parent[target_obj.prop] = checked_value;
@@ -1122,3 +1124,4 @@ class Hacci {
 window['Hacci'] = Hacci;
 
 export { Hacci };
+export default Hacci;

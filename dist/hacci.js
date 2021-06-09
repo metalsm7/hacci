@@ -250,7 +250,8 @@ var Hacci = /** @class */ (function () {
                                     obj.checked = obj.value == model_1.val;
                                 }
                                 //
-                                Array.isArray(checked_value) && self.arrayEventListener(model_1.prop, checked_value);
+                                // Array.isArray(checked_value) && self.arrayEventListener(model.prop, checked_value);
+                                Array.isArray(checked_value) && self.arrayEventListener(attrs[cnti_1].value, checked_value);
                                 //
                                 var target_obj = self.getVal(attrs[cnti_1].value, self._traces.model, '__');
                                 target_obj.parent[target_obj.prop] = checked_value;
@@ -261,10 +262,10 @@ var Hacci = /** @class */ (function () {
                         }
                         else if (obj.tagName === 'SELECT' && self._toi_select.indexOf(obj.type) > -1) {
                             // 초기값 설정
-                            var model_2 = this_1.getVal(attrs[cnti_1].value, this_1);
+                            var model = this_1.getVal(attrs[cnti_1].value, this_1);
                             //
                             var groups = obj.querySelectorAll("option");
-                            self.setSelectedValue(groups, model_2.val);
+                            self.setSelectedValue(groups, model.val);
                             // 이벤트 처리 등록
                             obj.addEventListener('change', function (_evt) {
                                 var checked_value = (obj.type === 'select-one') ? null : [];
@@ -272,7 +273,8 @@ var Hacci = /** @class */ (function () {
                                 var groups = obj.querySelectorAll("option");
                                 checked_value = self.getSelectedValue(groups, obj.type === 'select-multiple');
                                 //
-                                Array.isArray(checked_value) && self.arrayEventListener(model_2.prop, checked_value);
+                                // Array.isArray(checked_value) && self.arrayEventListener(model.prop, checked_value);
+                                Array.isArray(checked_value) && self.arrayEventListener(attrs[cnti_1].value, checked_value);
                                 //
                                 var target_obj = self.getVal(attrs[cnti_1].value, self._traces.model, '__');
                                 target_obj.parent[target_obj.prop] = checked_value;
@@ -1103,4 +1105,5 @@ var Hacci = /** @class */ (function () {
 }());
 // exports.Hacci = Hacci;
 window['Hacci'] = Hacci;
+// exports.default = Hacci;
 // sourceMappingURL=index.js.map
