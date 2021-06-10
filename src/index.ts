@@ -268,7 +268,7 @@ class Hacci {
                 }
 
                 // 2. text 처리
-                const text = obj.innerText;
+                // const text = obj.innerText;
             }
             //
             for (let cnti = 0; cnti < objs.length; cnti++) {
@@ -277,25 +277,28 @@ class Hacci {
                 const attrs = obj['attributes'];
                 //
                 for (let cnti: number = 0; cnti < attrs.length; cnti++) {
-                    if (/^hc:/.test(attrs[cnti].name)) {
+                    if (/^hc:(ref|click|scroll(\.hit\.(top|bottom))?)$/.test(attrs[cnti].name)) {
                         //
                         switch (attrs[cnti].name) {
                             case 'hc:ref':
                                 this._refs[attrs[cnti].value] = obj;
                                 break;
                             case 'hc:click':
-                                this.registEventListener((obj as HTMLInputElement), 'click', attrs[cnti]);
-                                break;
                             case 'hc:scroll':
-                                this.registEventListener((obj as HTMLInputElement), 'scroll', attrs[cnti]);
+                                this.registEventListener((obj as HTMLInputElement), attrs[cnti].name.substring(3), attrs[cnti]);
                                 break;
+                            case 'hc:scroll.hit.top':
                             case 'hc:scroll.hit.bottom':
                                 this.registEventListener(
                                     obj as Element,
                                     'scroll',
                                     attrs[cnti],
                                     function(evt: Event) {
-                                        if (self.scrollTop(obj as Element) + self.innerHeight(obj) >= self.scrollHeight(obj as Element)) {
+                                        if (
+                                            attrs[cnti].name.indexOf('bottom') > -1 ?
+                                                (self.scrollTop(obj as Element) + self.innerHeight(obj) >= self.scrollHeight(obj as Element)) :
+                                                (self.scrollTop(obj as Element) <= 0)
+                                        ) {
                                             self.callMethod({
                                                 attr: attrs[cnti],
                                                 evt
@@ -304,27 +307,6 @@ class Hacci {
                                     }
                                 );
                                 break;
-                            case 'hc:scroll.hit.top':
-                                this.registEventListener(
-                                    obj as Element,
-                                    'scroll',
-                                    attrs[cnti],
-                                    function(evt: Event) {
-                                        if (self.scrollTop(obj as Element) <= 0) {
-                                            self.callMethod({
-                                                attr: attrs[cnti],
-                                                evt
-                                            });
-                                        }
-                                    }
-                                );
-                                break;
-                            // case 'hc:text':
-                            //     (obj as HTMLInputElement).innerText = this[attrs[cnti].value];
-                            //     break;
-                            // case 'hc:html':
-                            //     (obj as HTMLInputElement).innerHTML = this[attrs[cnti].value];
-                            //     break;
                         }
                     }
                 }
@@ -490,11 +472,10 @@ class Hacci {
                             })
                         }
                     }
-                    else if (/^hc:html$/.test(attrs[cnti].name) && attrs[cnti].value === target_attr.value) {
-                        obj.innerHTML = model.val;
-                    }
-                    else if (/^hc:text$/.test(attrs[cnti].name) && attrs[cnti].value === target_attr.value) {
-                        obj.innerText = model.val;
+                    else if (/^hc:(html|text)$/.test(attrs[cnti].name) && attrs[cnti].value === target_attr.value) {
+                        attrs[cnti].name === 'hc:html' ?
+                            (obj.innerHTML = model.val) :
+                            (obj.innerText = model.val);
                     }
                 }
             }
@@ -506,7 +487,7 @@ class Hacci {
      * @param option 
      */
     private callMethod(option: any): void {
-        // console.log(`callMethod - option:${JSON.stringify(option)}`);
+        // console.log(`callMethod - option:${option.attr.name}`);
         // const has_bracket = option.attr.value.includes('(');
         const has_bracket = option.attr.value.indexOf('(') > -1;
         //
@@ -1057,8 +1038,8 @@ class Hacci {
 
     private scrollHeight(el: Element): number {
         return el.nodeType === 9 ?
-            window.document.documentElement.scrollHeight :
-            el.scrollHeight;
+            Number(window.document.documentElement.scrollHeight) :
+            Number(el.scrollHeight);
     }
 
     private scrollTop(el: Element): number {
@@ -1070,14 +1051,14 @@ class Hacci {
 
     private innerHeight(el: any): number {
         const rtn_val = el.nodeType === 9 ? 
-            Math.max(
+            Number(Math.max(
                 (el as Document).body.scrollHeight,
                 (el as Document).documentElement.scrollHeight,
                 (el as Document).body.offsetHeight,
                 (el as Document).documentElement.offsetHeight,
                 (el as Document).documentElement.clientHeight
-            ) :
-            (el as HTMLElement).clientHeight;
+            )) :
+            Number((el as HTMLElement).clientHeight);
         return Math.ceil(rtn_val);
     }
 
