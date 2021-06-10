@@ -51,6 +51,7 @@ How to use
                                 - SELECT[type=select-multiple]
     hc:if                   해당 Element의 model값이 true인 경우만 해당 Element를 사용함
     hc:neither              해당 Element의 model값이 false인 경우만 해당 Element를 사용함
+    hc:disabled             해당 Element의 disabled 상태 지정
     hc:html                 innerHTML 처리
     hc:text                 innerText 처리
     hc:change               해당 Element의 model값이 변경되는 경우 호출

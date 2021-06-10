@@ -148,7 +148,7 @@ class Hacci {
                 const attrs = obj['attributes'];
                 //
                 for (let cnti: number = 0; cnti < attrs.length; cnti++) {
-                    if (/^hc:(model|if|neither|html|text)$/.test(attrs[cnti].name)) {
+                    if (/^hc:(model|if|neither|disabled|html|text)$/.test(attrs[cnti].name)) {
                         //
                         this.traceModel({
                             parent: this,
@@ -176,6 +176,10 @@ class Hacci {
                                 });
                                 obj.parentNode.removeChild(obj);
                             }
+                        }
+                        else if (/^hc:disabled$/.test(attrs[cnti].name)) {
+                            const model = this.getVal(attrs[cnti].value, this);
+                            obj.disabled = model.val;
                         }
                         else if (/^hc:html$/.test(attrs[cnti].name)) {
                             const model = this.getVal(attrs[cnti].value, this);
@@ -471,6 +475,9 @@ class Hacci {
                                 evt: null,
                             })
                         }
+                    }
+                    else if (/^hc:disabled$/.test(attrs[cnti].name) && attrs[cnti].value === target_attr.value) {
+                        obj.disabled = model.val;
                     }
                     else if (/^hc:(html|text)$/.test(attrs[cnti].name) && attrs[cnti].value === target_attr.value) {
                         attrs[cnti].name === 'hc:html' ?
@@ -933,11 +940,17 @@ class Hacci {
                                     obj.parentNode.removeChild(obj);
                                 }
                             }
+                            else if (/^hc:disabled$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
+                                // obj.disabled = option.parent[option.property];
+                                obj.disabled = self.getVal(property, self).val;
+                            }
                             else if (/^hc:html$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
-                                obj.innerHTML = option.parent[option.property];
+                                // obj.innerHTML = option.parent[option.property];
+                                obj.innerHTML = self.getVal(property, self).val;
                             }
                             else if (/^hc:text$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
-                                obj.innerText = option.parent[option.property];
+                                // obj.innerText = option.parent[option.property];
+                                obj.innerText = self.getVal(property, self).val;
                             }
                             else if (/^hc:model$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
                                 //
@@ -1028,6 +1041,7 @@ class Hacci {
                         return rtn_val
                     },
                     set: function(value: any) {
+                        // console.log(`traceModel - set - property:${`__${model.prop}`} / value:${value}`);
                         traceModel.parent[`__${model.prop}`] = value;
                         Array.isArray(value) && self.arrayEventListener(option.property, value);
                         traces.__listen(option.property, value);

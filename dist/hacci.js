@@ -184,7 +184,7 @@ var Hacci = /** @class */ (function () {
                 //
                 var attrs = obj['attributes'];
                 var _loop_3 = function (cnti_1) {
-                    if (/^hc:(model|if|neither|html|text)$/.test(attrs[cnti_1].name)) {
+                    if (/^hc:(model|if|neither|disabled|html|text)$/.test(attrs[cnti_1].name)) {
                         //
                         this_1.traceModel({
                             parent: this_1,
@@ -210,6 +210,10 @@ var Hacci = /** @class */ (function () {
                                 });
                                 obj.parentNode.removeChild(obj);
                             }
+                        }
+                        else if (/^hc:disabled$/.test(attrs[cnti_1].name)) {
+                            var model = this_1.getVal(attrs[cnti_1].value, this_1);
+                            obj.disabled = model.val;
                         }
                         else if (/^hc:html$/.test(attrs[cnti_1].name)) {
                             var model = this_1.getVal(attrs[cnti_1].value, this_1);
@@ -509,6 +513,9 @@ var Hacci = /** @class */ (function () {
                                 evt: null,
                             });
                         }
+                    }
+                    else if (/^hc:disabled$/.test(attrs[cnti_5].name) && attrs[cnti_5].value === target_attr.value) {
+                        obj.disabled = model.val;
                     }
                     else if (/^hc:(html|text)$/.test(attrs[cnti_5].name) && attrs[cnti_5].value === target_attr.value) {
                         attrs[cnti_5].name === 'hc:html' ?
@@ -911,11 +918,17 @@ var Hacci = /** @class */ (function () {
                                 obj.parentNode.removeChild(obj);
                             }
                         }
+                        else if (/^hc:disabled$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
+                            // obj.disabled = option.parent[option.property];
+                            obj.disabled = self.getVal(property, self).val;
+                        }
                         else if (/^hc:html$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
-                            obj.innerHTML = option.parent[option.property];
+                            // obj.innerHTML = option.parent[option.property];
+                            obj.innerHTML = self.getVal(property, self).val;
                         }
                         else if (/^hc:text$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
-                            obj.innerText = option.parent[option.property];
+                            // obj.innerText = option.parent[option.property];
+                            obj.innerText = self.getVal(property, self).val;
                         }
                         else if (/^hc:model$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
                             //
@@ -1000,6 +1013,7 @@ var Hacci = /** @class */ (function () {
                     return rtn_val;
                 },
                 set: function (value) {
+                    // console.log(`traceModel - set - property:${`__${model.prop}`} / value:${value}`);
                     traceModel.parent["__" + model.prop] = value;
                     Array.isArray(value) && self.arrayEventListener(option.property, value);
                     traces.__listen(option.property, value);
