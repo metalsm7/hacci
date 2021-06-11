@@ -42,6 +42,7 @@ var Hacci = /** @class */ (function () {
             el: null,
             template: null,
             data: null,
+            computed: null,
             method: null,
             created: null,
             mounted: null,
@@ -71,6 +72,13 @@ var Hacci = /** @class */ (function () {
                     property: data_keys[cnti],
                     value: null,
                 });
+            }
+        }
+        //
+        if (option.computed) {
+            var compute_keys = Object.keys(option.computed);
+            for (var cnti = 0; cnti < compute_keys.length; cnti++) {
+                this[compute_keys[cnti]] = this.fromArrowFunc(option.computed[compute_keys[cnti]]).bind(this);
             }
         }
         //

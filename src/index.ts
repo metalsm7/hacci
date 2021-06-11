@@ -3,6 +3,7 @@ interface HacciOption {
     el: Element|null,
     template: string|null,
     data: any;
+    computed: any;
     method: any;
     created: Function|null;
     mounted: Function|null;
@@ -67,6 +68,7 @@ class Hacci {
             el: null,
             template: null,
             data: null,
+            computed: null,
             method: null,
             created: null,
             mounted: null,
@@ -96,6 +98,13 @@ class Hacci {
                     property: data_keys[cnti],
                     value: null, // attrs[cnti].value,
                 })
+            }
+        }
+        //
+        if (option.computed) {
+            const compute_keys = Object.keys(option.computed);
+            for (let cnti: number = 0; cnti < compute_keys.length; cnti++) {
+                this[compute_keys[cnti]] = this.fromArrowFunc(option.computed[compute_keys[cnti]]).bind(this);
             }
         }
         //

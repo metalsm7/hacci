@@ -3,6 +3,7 @@ interface HacciOption {
     el: Element | null;
     template: string | null;
     data: any;
+    computed: any;
     method: any;
     created: Function | null;
     mounted: Function | null;
