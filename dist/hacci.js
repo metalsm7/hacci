@@ -18,6 +18,9 @@ var Hacci = /** @class */ (function () {
         //
         this._objs = {};
         //
+        this._txts = [];
+        this._txts_mstr = null;
+        //
         this._on = {
             created: null,
             mounted: null,
@@ -33,66 +36,6 @@ var Hacci = /** @class */ (function () {
         this._toi_select = ['select-one', 'select-multiple'];
         //
         this._bus = {};
-        /**
-         * Array 값 수정이 발생한 경우 감지를 위한 이벤트 처리
-         * @param prop
-         * @param target
-         */
-        this.arrayEventListener = function (prop, target) {
-            //
-            var traces = this._traces.model;
-            //
-            target.push = function () {
-                var args = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    args[_i] = arguments[_i];
-                }
-                var _a;
-                var rtn_val = (_a = Array.prototype.push).call.apply(_a, [target].concat(args));
-                traces.__listen(prop, target);
-                return rtn_val;
-            },
-                target.pop = function () {
-                    var args = [];
-                    for (var _i = 0; _i < arguments.length; _i++) {
-                        args[_i] = arguments[_i];
-                    }
-                    var _a;
-                    var rtn_val = (_a = Array.prototype.pop).call.apply(_a, [target].concat(args));
-                    traces.__listen(prop, target);
-                    return rtn_val;
-                },
-                target.splice = function () {
-                    var args = [];
-                    for (var _i = 0; _i < arguments.length; _i++) {
-                        args[_i] = arguments[_i];
-                    }
-                    var _a;
-                    var rtn_val = (_a = Array.prototype.splice).call.apply(_a, [target].concat(args));
-                    traces.__listen(prop, target);
-                    return rtn_val;
-                },
-                target.shift = function () {
-                    var args = [];
-                    for (var _i = 0; _i < arguments.length; _i++) {
-                        args[_i] = arguments[_i];
-                    }
-                    var _a;
-                    var rtn_val = (_a = Array.prototype.shift).call.apply(_a, [target].concat(args));
-                    traces.__listen(prop, target);
-                    return rtn_val;
-                },
-                target.unshift = function () {
-                    var args = [];
-                    for (var _i = 0; _i < arguments.length; _i++) {
-                        args[_i] = arguments[_i];
-                    }
-                    var _a;
-                    var rtn_val = (_a = Array.prototype.unshift).call.apply(_a, [target].concat(args));
-                    traces.__listen(prop, target);
-                    return rtn_val;
-                };
-        };
         //
         !option && (option = {
             id: null,
@@ -122,6 +65,12 @@ var Hacci = /** @class */ (function () {
             var data_keys = Object.keys(option.data);
             for (var cnti = 0; cnti < data_keys.length; cnti++) {
                 this[data_keys[cnti]] = option.data[data_keys[cnti]];
+                //
+                this.traceModel({
+                    parent: this,
+                    property: data_keys[cnti],
+                    value: null,
+                });
             }
         }
         //
@@ -176,6 +125,8 @@ var Hacci = /** @class */ (function () {
                 }
             });
             observer.observe(this.el.parentElement, { attributes: false, childList: true, subtree: false });
+            //
+            this.searchTextNodes();
             //
             var objs = this.el.querySelectorAll('*');
             var _loop_1 = function (cnti) {
@@ -386,6 +337,74 @@ var Hacci = /** @class */ (function () {
             }
         }
     };
+    Hacci.prototype.searchTextNodes = function (parent) {
+        if (parent === void 0) { parent = null; }
+        !parent && (parent = this.el);
+        //
+        if (parent.hasChildNodes()) {
+            for (var cnti = 0; cnti < parent.childNodes.length; cnti++) {
+                switch (parent.childNodes[cnti].nodeType) {
+                    case 1: // element
+                        this.searchTextNodes(parent.childNodes[cnti]);
+                        break;
+                    case 3: // text
+                        /{{([^}}\r\n]+)?}}/g.test(parent.childNodes[cnti].textContent) &&
+                            this._txts.push({
+                                node: parent.childNodes[cnti],
+                                text: parent.childNodes[cnti].textContent,
+                                fn: null // 컴파일된 함수
+                            });
+                        break;
+                }
+            }
+            // 모델 변경시 text 변경 처리용
+            this.applyTextChange();
+        }
+    };
+    /**
+     * 대상 문자열에 대한 보간 처리
+     */
+    Hacci.prototype.applyTextChange = function () {
+        for (var cnti = 0; cnti < this._txts.length; cnti++) {
+            if (!this._txts[cnti].fn) {
+                this._txts[cnti].fn = this.compileText(this._txts[cnti].text);
+            }
+            this._txts[cnti].node.textContent = this._txts[cnti].fn.apply(this);
+        }
+    };
+    /**
+     * 문자열 보간
+     * @param html
+     */
+    // private compileText(html: string, options: any): Function {
+    Hacci.prototype.compileText = function (html) {
+        //
+        if (!this._txts_mstr) {
+            this._txts_mstr = '';
+            var keys = Object.keys(this);
+            for (var cnti = 0; cnti < keys.length; cnti++) {
+                if (keys[cnti].length > 1 && keys[cnti].charAt(0) === '_')
+                    continue;
+                this._txts_mstr += "var " + keys[cnti] + "=this." + keys[cnti] + ";\n";
+            }
+        }
+        // /(?<!{)(?:{{2})(?!{)([^}{2}\r\n]+)?(?<!})(?:}{2})(?!})/g
+        var re = /{{([^}}]+)?}}/g, reExp = /(^( )?(if|for|else|switch|case|break|{|}))(.*)?/g, code = this._txts_mstr + 'var r=[];\n', cursor = 0, match;
+        var add = function (line, js) {
+            if (js === void 0) { js = null; }
+            js ? (code += line.match(reExp) ? line + '\n' : 'r.push(' + line + ');\n') :
+                (code += line != '' ? 'r.push("' + line.replace(/"/g, '\\"') + '");\n' : '');
+            return add;
+        };
+        while (match = re.exec(html)) {
+            add(html.slice(cursor, match.index))(match[1], true);
+            cursor = match.index + match[0].length;
+        }
+        add(html.substr(cursor, html.length - cursor));
+        code += 'return r.join("");';
+        // return (new Function(code.replace(/[\r\t\n]/g, ''))).apply(options);
+        return new Function(code.replace(/[\r\t\n]/g, ''));
+    };
     Hacci.prototype.registEventListener = function (el, name, attr, listener) {
         if (listener === void 0) { listener = null; }
         var self = this;
@@ -524,6 +543,8 @@ var Hacci = /** @class */ (function () {
                     }
                 }
             }
+            // 모델 변경시 text 변경 처리용
+            this.applyTextChange();
         }
     };
     /**
@@ -827,6 +848,66 @@ var Hacci = /** @class */ (function () {
             }
         }
     };
+    /**
+     * Array 값 수정이 발생한 경우 감지를 위한 이벤트 처리
+     * @param prop
+     * @param target
+     */
+    Hacci.prototype.arrayEventListener = function (prop, target) {
+        //
+        var traces = this._traces.model;
+        //
+        target.push = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            var _a;
+            var rtn_val = (_a = Array.prototype.push).call.apply(_a, [target].concat(args));
+            traces.__listen(prop, target);
+            return rtn_val;
+        },
+            target.pop = function () {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i] = arguments[_i];
+                }
+                var _a;
+                var rtn_val = (_a = Array.prototype.pop).call.apply(_a, [target].concat(args));
+                traces.__listen(prop, target);
+                return rtn_val;
+            },
+            target.splice = function () {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i] = arguments[_i];
+                }
+                var _a;
+                var rtn_val = (_a = Array.prototype.splice).call.apply(_a, [target].concat(args));
+                traces.__listen(prop, target);
+                return rtn_val;
+            },
+            target.shift = function () {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i] = arguments[_i];
+                }
+                var _a;
+                var rtn_val = (_a = Array.prototype.shift).call.apply(_a, [target].concat(args));
+                traces.__listen(prop, target);
+                return rtn_val;
+            },
+            target.unshift = function () {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i] = arguments[_i];
+                }
+                var _a;
+                var rtn_val = (_a = Array.prototype.unshift).call.apply(_a, [target].concat(args));
+                traces.__listen(prop, target);
+                return rtn_val;
+            };
+    };
     Hacci.prototype.traceModel = function (option) {
         //
         if ((new RegExp(/^(true|false|'.+'|\d+)$/)).test(option.property))
@@ -1017,6 +1098,8 @@ var Hacci = /** @class */ (function () {
                     traceModel.parent["__" + model.prop] = value;
                     Array.isArray(value) && self.arrayEventListener(option.property, value);
                     traces.__listen(option.property, value);
+                    // 모델 변경시 text 변경 처리용
+                    self.applyTextChange();
                 }
             });
     };

@@ -16,6 +16,8 @@ declare class Hacci {
     private _refs;
     private _traces;
     private _objs;
+    private _txts;
+    private _txts_mstr;
     private _on;
     private _event_listeners;
     private _toi_input;
@@ -40,6 +42,16 @@ declare class Hacci {
      * model 정보 초기화
      */
     clearData(): void;
+    private searchTextNodes;
+    /**
+     * 대상 문자열에 대한 보간 처리
+     */
+    private applyTextChange;
+    /**
+     * 문자열 보간
+     * @param html
+     */
+    private compileText;
     private registEventListener;
     private clearEventListeners;
     /**

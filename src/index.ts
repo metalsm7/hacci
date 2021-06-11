@@ -33,6 +33,9 @@ class Hacci {
     //
     private _objs: any = {};
     //
+    private _txts: any[] = [];
+    private _txts_mstr: string = null;
+    //
     private _on: any = {
         created: null,
         mounted: null,
@@ -87,6 +90,12 @@ class Hacci {
             const data_keys = Object.keys(option.data);
             for (let cnti: number = 0; cnti < data_keys.length; cnti++) {
                 this[data_keys[cnti]] = option.data[data_keys[cnti]];
+                //
+                this.traceModel({
+                    parent: this,
+                    property: data_keys[cnti],
+                    value: null, // attrs[cnti].value,
+                })
             }
         }
         //
@@ -137,6 +146,9 @@ class Hacci {
             observer.observe(this.el.parentElement, { attributes: false, childList: true, subtree: false });
 
             //
+            this.searchTextNodes();
+
+            //
             const objs: NodeList = this.el.querySelectorAll('*');
             //
             for (let cnti = 0; cnti < objs.length; cnti++) {
@@ -155,6 +167,7 @@ class Hacci {
                             property: attrs[cnti].value,
                             value: null, // attrs[cnti].value,
                         })
+
                         //
                         if (/^hc:(if|neither)$/.test(attrs[cnti].name)) {
                             const model = this.getVal(attrs[cnti].value, this);
@@ -347,6 +360,75 @@ class Hacci {
         }
     }
 
+    private searchTextNodes(parent: Node = null): void {
+        !parent && (parent = this.el);
+        //
+        if (parent.hasChildNodes()) {
+            for (let cnti: number = 0; cnti < parent.childNodes.length; cnti++) {
+                switch (parent.childNodes[cnti].nodeType) {
+                    case 1: // element
+                        this.searchTextNodes(parent.childNodes[cnti]);
+                        break;
+                    case 3: // text
+                        /{{([^}}\r\n]+)?}}/g.test(parent.childNodes[cnti].textContent) &&
+                            this._txts.push({
+                                node: parent.childNodes[cnti],
+                                text: parent.childNodes[cnti].textContent,
+                                fn: null    // 컴파일된 함수
+                            });
+                        break;
+                }
+            }
+
+            // 모델 변경시 text 변경 처리용
+            this.applyTextChange();
+        }
+    }
+
+    /**
+     * 대상 문자열에 대한 보간 처리
+     */
+    private applyTextChange(): void {
+        for (let cnti: number = 0; cnti < this._txts.length; cnti++) {
+            if (!this._txts[cnti].fn) {
+                this._txts[cnti].fn = this.compileText(this._txts[cnti].text);
+            }
+            this._txts[cnti].node.textContent = this._txts[cnti].fn.apply(this);
+        }
+    }
+
+    /**
+     * 문자열 보간
+     * @param html 
+     */
+    // private compileText(html: string, options: any): Function {
+    private compileText(html: string): Function {
+        //
+        if (!this._txts_mstr) {
+            this._txts_mstr = '';
+            const keys: string[] = Object.keys(this);
+            for (let cnti: number = 0; cnti < keys.length; cnti++) {
+                if (keys[cnti].length > 1 && keys[cnti].charAt(0) === '_') continue;
+                this._txts_mstr += `var ${keys[cnti]}=this.${keys[cnti]};\n`;
+            }
+        }
+        // /(?<!{)(?:{{2})(?!{)([^}{2}\r\n]+)?(?<!})(?:}{2})(?!})/g
+        let re: RegExp = /{{([^}}]+)?}}/g, reExp: RegExp = /(^( )?(if|for|else|switch|case|break|{|}))(.*)?/g, code: string = this._txts_mstr + 'var r=[];\n', cursor: number = 0, match: any;
+        const add = function(line: any, js: any = null) {
+            js? (code += line.match(reExp) ? line + '\n' : 'r.push(' + line + ');\n') :
+                (code += line != '' ? 'r.push("' + line.replace(/"/g, '\\"') + '");\n' : '');
+            return add;
+        }
+        while (match = re.exec(html)) {
+            add(html.slice(cursor, match.index))(match[1], true);
+            cursor = match.index + match[0].length;
+        }
+        add(html.substr(cursor, html.length - cursor));
+        code += 'return r.join("");';
+        // return (new Function(code.replace(/[\r\t\n]/g, ''))).apply(options);
+        return new Function(code.replace(/[\r\t\n]/g, ''));
+    }
+
     private registEventListener(el: Element, name: string, attr: any, listener: EventListenerOrEventListenerObject = null): void {
         const self: Hacci = this;
         //
@@ -486,6 +568,9 @@ class Hacci {
                     }
                 }
             }
+            
+            // 모델 변경시 text 변경 처리용
+            this.applyTextChange();
         }
     }
 
@@ -814,7 +899,7 @@ class Hacci {
      * @param prop 
      * @param target 
      */
-    private arrayEventListener = function(prop: string, target: Array<any>): void {
+    private arrayEventListener(prop: string, target: Array<any>): void {
         //
         const traces = this._traces.model;
 
@@ -1045,6 +1130,9 @@ class Hacci {
                         traceModel.parent[`__${model.prop}`] = value;
                         Array.isArray(value) && self.arrayEventListener(option.property, value);
                         traces.__listen(option.property, value);
+
+                        // 모델 변경시 text 변경 처리용
+                        self.applyTextChange();
                     }
                 }
             );

@@ -69,6 +69,10 @@ How to use
     hc:scroll.hit.top       scroll Event 발생 중 스크롤이 맨위에 도달하는 경우 호출
     hc:scroll.hit.bottom    scroll Event 발생 중 스크롤이 맨아래에 도달하는 경우 호출
 ```
+### Interpolation
+```
+    {{}}                    괄호안의 식에 대한 결과를 문자열로 대체
+```
 License
 ===
 [MIT](/LICENSE)
