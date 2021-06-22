@@ -1,4 +1,5 @@
 const Koa = require('koa');
+const serve = require('koa-static');
 const bodyParser = require('koa-bodyparser');
 const Router = require('koa-router');
 const Views = require('koa-views');
@@ -6,6 +7,9 @@ const consola = require('consola');
 
 //
 const app = new Koa();
+
+//
+app.use(serve(`${__dirname}/public`));
 
 // view
 const render = Views(`${__dirname}/views`, {
