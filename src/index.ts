@@ -89,6 +89,8 @@ class Hacci {
         //
         if (option.data) {
             //
+            // this.redefineModel(option.data);
+            //
             const data_keys = Object.keys(option.data);
             for (let cnti: number = 0; cnti < data_keys.length; cnti++) {
                 this[data_keys[cnti]] = option.data[data_keys[cnti]];
@@ -1269,6 +1271,75 @@ class Hacci {
     public get refs(): any {
         return this._refs;
     }
+
+    // private redefineModel(data: any, parent: any = null, model: any = null): void {
+    //     //
+    //     if (['null', 'undefined'].indexOf(typeof(model)) > -1) {
+    //         !this['_models'] && (this['_models'] = {});
+    //         model = this['_models'];
+    //     }
+    //     // copy
+    //     const keys: string[] = Object.keys(data);
+    //     for (let cnti: number = 0; cnti < keys.length; cnti++) {
+    //         const key: string = keys[cnti];
+    //         const val: any = data[key];
+    //         //
+    //         if (['null', 'undefined'].indexOf(typeof(model[key])) > -1) {
+    //             model[key] = val;
+    //         }
+    //         //
+    //         // !(data[keys[cnti]] instanceof Object) -> number, string typeof
+    //         // (data[keys[cnti]] instanceof Object) -> object typeof
+    //         // (data[keys[cnti]] instanceof Array) -> object typeof
+    //         if (
+    //             !(val instanceof Object) && ['number', 'string'].indexOf(typeof(val)) > -1 ||
+    //             (val instanceof Object) && ['object'].indexOf(typeof(val)) > -1 ||
+    //             (val instanceof Array) && ['object'].indexOf(typeof(val)) > -1
+    //         ) {
+    //             //
+    //             Object.defineProperty(
+    //                 data,
+    //                 key,
+    //                 {
+    //                     get: function() {
+    //                         return model[key];
+    //                     },
+    //                     set: function(value: any) {
+    //                         model[key] = value;
+    //                     }
+    //                 }
+    //             );
+
+    //             //
+    //             (val instanceof Object) &&
+    //                 ['object'].indexOf(typeof(val)) > -1 &&
+    //                 this.redefineModel(val, data, model[key]);
+    //         }
+    //     }
+    // }
+
+    // /**
+    //  * model의 모든 값에 대해 redefine 처리
+    //  */
+    // private setModels(data: any): void {
+    //     // prepare model object
+    //     !this['_models'] && (this['_models'] = {});
+    //     //
+    //     this.redefineModel(data, this['_models']);
+    // }
+
+    // private detector(key: string): void {
+    //     /**
+    //      * _models = {
+    //      *   {name}: {
+    //      *     v: {object},
+    //      *     refs: [
+    //      *     ],
+    //      *   }
+    //      * }
+    //      */
+
+    // }
 }
 
 window['Hacci'] = Hacci;

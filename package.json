@@ -9,7 +9,9 @@
   "main": "index.js",
   "watch": {
     "build-dev": {
-      "patterns": ["src"],
+      "patterns": [
+        "src"
+      ],
       "extensions": "js,ts",
       "quiet": false,
       "legacyWatch": true,
@@ -17,7 +19,9 @@
       "runOnChangeOnly": false
     },
     "build": {
-      "patterns": ["src"],
+      "patterns": [
+        "src"
+      ],
       "extensions": "js,ts",
       "quiet": false,
       "legacyWatch": true,
@@ -28,7 +32,8 @@
   "scripts": {
     "build-dev": "tsc -t es5 && sed -i.bak \"s/^exports/\\\\/\\\\/ exports/g\" index.js && sed -i \"s/^Object.defineProperty(exports/\\\\/\\\\/ Object.defineProperty(exports/g\" index.js && sed -i \"s/^\\\\/\\\\/# sourceMappingURL/\\\\/\\\\/ sourceMappingURL/g\" index.js && cp index.js dist/hacci.js && rm -f index.js && mv index.js.bak index.js && sed -i \"s/^window/\\\\/\\\\/ window/g\" index.js",
     "build": "tsc -t es5 && sed -i.min.bak \"s/^exports/\\\\/\\\\/ exports/g\" index.js && sed -i \"s/^Object.defineProperty(exports/\\\\/\\\\/ Object.defineProperty(exports/g\" index.js && sed -i \"s/^\\\\/\\\\/# sourceMappingURL/\\\\/\\\\/ sourceMappingURL/g\" index.js && uglifyjs index.js -c -m > dist/hacci.min.js && rm -f index.js && mv index.js.min.bak index.js && sed -i \"s/^window/\\\\/\\\\/ window/g\" index.js",
-    "watch": "npm-watch"
+    "watch": "npm-watch",
+    "sample": "cp dist/hacci.js sample/hacci.js && node sample/index.js"
   },
   "browserslist": [
     "defaults",
@@ -45,7 +50,15 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "consola": "^2.15.3",
+    "cross-env": "^7.0.3",
+    "koa": "^2.13.1",
+    "koa-bodyparser": "^4.3.0",
+    "koa-router": "^10.0.0",
+    "koa-views": "^7.0.1",
+    "mustache": "^4.2.0",
     "npm-watch": "^0.9.0",
-    "uglify-js": "^3.13.6"
+    "uglify-js": "^3.13.6",
+    "winston": "^3.3.3"
   }
 }

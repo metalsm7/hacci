@@ -1,0 +1,1127 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/styles/vs2015.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>
+    <!--link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.0.0/build/styles/github-dark.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.0.0/build/highlight.min.js"></script-->
+    <script>hljs.initHighlightingOnLoad(); //hljs.highlightAll();</script>
+    <script src="./hacci.js"></script>
+    <style>
+        .example {
+            border: 1px solid #cccccc;
+            width: calc(100% - 40px);
+            padding: 10px 20px;
+            margin: 10px 0;
+        }
+    </style>
+    </head>
+    <body>
+        <h1>Hacci Demo</h1>
+        <a href="https://github.com/metalsm7/hacci">Github link</a>
+        <hr />
+
+        <h2>Table of contents</h2>
+
+        <table width="100%">
+            <tr valign="top"><td rowspan="9" style="font-weight: bold;">Model&nbsp;&nbsp;&nbsp;</td><td>- <a href="#app_model_radio_ex1">Input - Radio #1</a></td></tr>
+            <tr><td>- <a href="#app_model_radio_ex2">Input - Radio #2 (grouped by name)</a></td></tr>
+            <tr><td>- <a href="#app_model_checkbox_ex1">Input - Checkbox #1</a></td></tr>
+            <tr><td>- <a href="#app_model_checkbox_ex2">Input - Checkbox #2 (grouped by name)</a></td></tr>
+            <tr><td>- <a href="#app_model_select_ex1">Input - Select #1 (single)</a></td></tr>
+            <tr><td>- <a href="#app_model_select_ex2">Input - Select #2 (multiple)</a></td></tr>
+            <tr><td>- <a href="#app_model_text_ex1">Input - Text</a></td></tr>
+            <tr><td>- <a href="#app_model_textarea_ex1">Input - Textarea</a></td></tr>
+            <tr><td>- <a href="#app_model_texthtml_ex1">Text/Html</a></td></tr>
+            
+            <tr valign="top"><td rowspan="5" style="font-weight: bold;">Event&nbsp;&nbsp;&nbsp;</td><td>- <a href="#app_event_change_ex1">Change (for radio, checkbox)</a></td></tr>
+            <tr><td>- <a href="#app_event_change_ex2">Change (for checkbox, select)</a></td></tr>
+            <tr><td>- <a href="#app_event_input_ex1">Input (for text, textarea)</a></td></tr>
+            <tr><td>- <a href="#app_event_click_ex1">Click</a></td></tr>
+            <tr><td>- <a href="#app_event_scroll_ex1">Scroll (scroll, scroll.hit.top, scroll.hit.bottom)</a></td></tr>
+            
+            <tr valign="top"><td rowspan="2" style="font-weight: bold;">Condition&nbsp;&nbsp;&nbsp;</td><td>- <a href="#app_condition_if_ex1">If / Neither</a></td></tr>
+            <tr><td>- <a href="#app_condition_disabled_ex1">Disabled</a></td></tr>
+        </table>
+        <hr />
+
+        <h2>Model</h2>
+
+        <div>
+            <div id="app_model_radio_ex1">
+                <h3>Input - Radio #1</h4>
+                <div class="example">
+                    <input hc:model="val" hc:change="onChange" id="model_input_radio_ex1" type="radio" value="one"><label for="model_input_radio_ex1">one</label>
+                    <label hc:ref="label"></label>
+                    <br />
+                    <button hc:if="visible.btn" hc:click="setModelVal(null)">model set null</button>
+                    <button hc:neither="visible.btn" hc:click="setModelVal('one')">model set one</button>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_model_radio_ex1"&gt;
+    &lt;h3&gt;Input - Radio&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;input hc:model="val" id="model_input_radio_ex1" type="radio" value="one"&gt;&lt;label for="model_input_radio_ex1"&gt;one&lt;/label&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+new Hacci({
+    el: document.querySelector('#app_model_radio_ex1'),
+    data: {
+        val: null
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_model_radio_ex1'),
+                data: {
+                    val: null,
+                    visible: {
+                        btn: false,
+                    }
+                },
+                method: {
+                    onChange: function() {
+                        this.refs.label.innerText = ' / model val is ' + this.val;
+                        this.visible.btn = this.val !== null;
+                    },
+                    setModelVal: function(val) {
+                        this.val = val;
+                    }
+                },
+                mounted: function() {
+                    this.onChange();
+                    //
+                    // this.refs.code.innerHTML = this.el.querySelector('#app_model_radio').outerHTML.replace(/\s*<!--.*-->/g, '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/            /g, '');
+                }
+            }).mount();
+            </script>
+        </div>
+        
+        <div>
+            <div id="app_model_radio_ex2">
+                <h3>Input - Radio #2 (grouped by name)</h4>
+                <div class="example">
+                    <input hc:model="val" hc:change="onChange" id="model_input_radio_ex2_1" type="radio" name="radio_ex2" value="red"><label for="model_input_radio_ex2_1">red</label>
+                    <input hc:model="val" hc:change="onChange" id="model_input_radio_ex2_2" type="radio" name="radio_ex2" value="green"><label for="model_input_radio_ex2_2">green</label>
+                    <input hc:model="val" hc:change="onChange" id="model_input_radio_ex2_3" type="radio" name="radio_ex2" value="yellow"><label for="model_input_radio_ex2_3">yellow</label>
+                    <label hc:ref="label"></label>
+                    <br />
+                    <button hc:if="visible.btn_clear" hc:click="setColor(null)">model set null</button>
+                    <button hc:neither="visible.btn_clear" hc:click="setColor('red')" style="background-color: red; border: 1px solid #aaaaaa;">model set red</button>
+                    <button hc:neither="visible.btn_clear" hc:click="setColor('green')" style="background-color: green; border: 1px solid #aaaaaa;">model set green</button>
+                    <button hc:neither="visible.btn_clear" hc:click="setColor('yellow')" style="background-color: yellow; border: 1px solid #aaaaaa;">model set yellow</button>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_model_radio_ex2"&gt;
+    &lt;h3&gt;Input - Radio #2 (grouped by name)&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;input hc:model="val" id="model_input_radio_ex2_1" type="radio" name="radio_ex2" value="red"&gt;&lt;label for="model_input_radio_ex2_1"&gt;red&lt;/label&gt;
+        &lt;input hc:model="val" id="model_input_radio_ex2_2" type="radio" name="radio_ex2" value="green"&gt;&lt;label for="model_input_radio_ex2_2"&gt;green&lt;/label&gt;
+        &lt;input hc:model="val" id="model_input_radio_ex2_3" type="radio" name="radio_ex2" value="yellow"&gt;&lt;label for="model_input_radio_ex2_3"&gt;yellow&lt;/label&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+new Hacci({
+    el: document.querySelector('#app_model_radio_ex2'),
+    data: {
+        val: null
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_model_radio_ex2'),
+                data: {
+                    val: null,
+                    visible: {
+                        btn_clear: false,
+                    }
+                },
+                method: {
+                    onChange: function() {
+                        this.refs.label.innerText = ' / model val is ' + this.val;
+                        this.visible.btn_clear = this.val !== null;
+                    },
+                    setColor: function(color) {
+                        this.val = color;
+                    }
+                },
+                mounted: function() {
+                    this.onChange();
+                }
+            }).mount();
+            </script>
+        </div>
+        
+        <div>
+            <div id="app_model_checkbox_ex1">
+                <h3>Input - Checkbox #1</h4>
+                <div class="example">
+                    <input hc:model="val" hc:change="onChange" id="model_input_checkbox_ex1" type="checkbox" value="one"><label for="model_input_checkbox_ex1">one</label>
+                    <label hc:ref="label"></label>
+                    <br />
+                    <button hc:if="visible.btn" hc:click="setModelVal(null)">model set null</button>
+                    <button hc:neither="visible.btn" hc:click="setModelVal('one')">model set one</button>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_model_checkbox_ex1"&gt;
+    &lt;h3&gt;Input - Checkbox #1&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;input hc:model="val" id="model_input_checkbox_ex1" type="checkbox" value="one"&gt;&lt;label for="model_input_checkbox_ex1"&gt;one&lt;/label&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+new Hacci({
+    el: document.querySelector('#app_model_checkbox_ex1'),
+    data: {
+        val: null
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_model_checkbox_ex1'),
+                data: {
+                    val: null,
+                    visible: {
+                        btn: false,
+                    }
+                },
+                method: {
+                    onChange: function() {
+                        this.refs.label.innerText = ' / model val is ' + JSON.stringify(this.val);
+                        this.visible.btn = this.val !== null;
+                    },
+                    setModelVal: function(val) {
+                        this.val = val;
+                    }
+                },
+                mounted: function() {
+                    this.onChange();
+                }
+            }).mount();
+            </script>
+        </div>
+        
+        <div>
+            <div id="app_model_checkbox_ex2">
+                <h3>Input - Checkbox #2 (grouped by name)</h4>
+                <div class="example">
+                    <input hc:model="model.list" hc:change="onChange" id="model_input_checkbox_ex2_1" type="checkbox" name="checkbox_ex2" value="red"><label for="model_input_checkbox_ex2_1">red</label>
+                    <input hc:model="model.list" hc:change="onChange" id="model_input_checkbox_ex2_2" type="checkbox" name="checkbox_ex2" value="green"><label for="model_input_checkbox_ex2_2">green</label>
+                    <input hc:model="model.list" hc:change="onChange" id="model_input_checkbox_ex2_3" type="checkbox" name="checkbox_ex2" value="yellow"><label for="model_input_checkbox_ex2_3">yellow</label>
+                    <label hc:ref="label"></label>
+                    <br />
+                    <button hc:click="clearColor()">model set []</button>
+                    <button hc:click="toggleColor('red')" style="background-color: red; border: 1px solid #aaaaaa;">model toggle red</button>
+                    <button hc:click="toggleColor('green')" style="background-color: green; border: 1px solid #aaaaaa;">model toggle green</button>
+                    <button hc:click="toggleColor('yellow')" style="background-color: yellow; border: 1px solid #aaaaaa;">model toggle yellow</button>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_model_checkbox_ex2"&gt;
+    &lt;h3&gt;Input - Checkbox #2 (grouped by name)&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;input hc:model="model.list" id="model_input_checkbox_ex2_1" type="checkbox" name="checkbox_ex2" value="red"&gt;&lt;label for="model_input_checkbox_ex2_1"&gt;red&lt;/label&gt;
+        &lt;input hc:model="model.list" id="model_input_checkbox_ex2_2" type="checkbox" name="checkbox_ex2" value="green"&gt;&lt;label for="model_input_checkbox_ex2_2"&gt;green&lt;/label&gt;
+        &lt;input hc:model="model.list" id="model_input_checkbox_ex2_3" type="checkbox" name="checkbox_ex2" value="yellow"&gt;&lt;label for="model_input_checkbox_ex2_3"&gt;yellow&lt;/label&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+new Hacci({
+    el: document.querySelector('#app_model_checkbox_ex2'),
+    data: {
+        val: []
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_model_checkbox_ex2'),
+                data: {
+                    model: {
+                        length: 3,
+                        list: ['red']
+                    },
+                    val: []
+                },
+                method: {
+                    onChange: function() {
+                        this.refs.label.innerText = ' / model val is ' + JSON.stringify(this.model.list);
+                    },
+                    clearColor: function() {
+                        this.model.list = [];
+                    },
+                    toggleColor: function(color) {
+                        var idx = this.model.list.indexOf(color);
+                        if (idx > -1) {
+                            this.model.list.splice(idx, 1);
+                        }
+                        else {
+                            this.model.list.push(color);
+                        }
+                    }
+                },
+                mounted: function() {
+                    this.onChange();
+                }
+            }).mount();
+            </script>
+        </div>
+        
+        <div>
+            <div id="app_model_select_ex1">
+                <h3>Input - Select #1 (single)</h4>
+                <div class="example">
+                    <select hc:model="val" hc:change="onChange">
+                        <option value="red">red</option>
+                        <option value="green">green</option>
+                        <option value="yellow">yellow</option>
+                    </select>
+                    <label hc:ref="label"></label>
+                    <br />
+                    <button hc:click="setColor('red')" style="background-color: red; border: 1px solid #aaaaaa;">model set red</button>
+                    <button hc:click="setColor('green')" style="background-color: green; border: 1px solid #aaaaaa;">model set green</button>
+                    <button hc:click="setColor('yellow')" style="background-color: yellow; border: 1px solid #aaaaaa;">model set yellow</button>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_model_select_ex1"&gt;
+    &lt;h3&gt;Input - Select #1 (single)&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;select hc:model="val"&gt;
+            &lt;option value="red"&gt;red&lt;/option&gt;
+            &lt;option value="green"&gt;green&lt;/option&gt;
+            &lt;option value="yellow"&gt;yellow&lt;/option&gt;
+        &lt;/select&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+new Hacci({
+    el: document.querySelector('#app_model_select_ex1'),
+    data: {
+        val: 'red'
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_model_select_ex1'),
+                data: {
+                    val: 'red'
+                },
+                method: {
+                    onChange: function() {
+                        this.refs.label.innerText = ' / model val is ' + this.val;
+                    },
+                    setColor: function(color) {
+                        this.val = color;
+                    }
+                },
+                mounted: function() {
+                    this.onChange();
+                }
+            }).mount();
+            </script>
+        </div>
+        
+        <div>
+            <div id="app_model_select_ex2">
+                <h3>Input - Select #2 (multiple)</h4>
+                <div class="example">
+                    <select hc:model="val" hc:change="onChange" multiple>
+                        <option value="red">red</option>
+                        <option value="green">green</option>
+                        <option value="yellow">yellow</option>
+                        <option value="blue">blue</option>
+                    </select>
+                    <label hc:ref="label"></label>
+                    <br />
+                    <button hc:click="clearColor()">model set []</button>
+                    <button hc:click="toggleColor('red')" style="background-color: red; border: 1px solid #aaaaaa;">model toggle red</button>
+                    <button hc:click="toggleColor('green')" style="background-color: green; border: 1px solid #aaaaaa;">model toggle green</button>
+                    <button hc:click="toggleColor('yellow')" style="background-color: yellow; border: 1px solid #aaaaaa;">model toggle yellow</button>
+                    <button hc:click="toggleColor('blue')" style="background-color: blue; border: 1px solid #aaaaaa;">model toggle blue</button>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_model_select_ex2"&gt;
+    &lt;h3&gt;Input - Select #2 (multiple)&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;select hc:model="val" multiple&gt;
+            &lt;option value="red"&gt;red&lt;/option&gt;
+            &lt;option value="green"&gt;green&lt;/option&gt;
+            &lt;option value="yellow"&gt;yellow&lt;/option&gt;
+            &lt;option value="blue"&gt;blue&lt;/option&gt;
+        &lt;/select&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+new Hacci({
+    el: document.querySelector('#app_model_select_ex2'),
+    data: {
+        val: ['red', 'yellow']
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_model_select_ex2'),
+                data: {
+                    val: ['red', 'yellow']
+                },
+                method: {
+                    onChange: function() {
+                        this.refs.label.innerText = ' / model val is ' + JSON.stringify(this.val);
+                    },
+                    clearColor: function() {
+                        this.val = [];
+                    },
+                    toggleColor: function(color) {
+                        var idx = this.val.indexOf(color);
+                        if (idx > -1) {
+                            this.val.splice(idx, 1);
+                        }
+                        else {
+                            this.val.push(color);
+                        }
+                    }
+                },
+                mounted: function() {
+                    this.onChange();
+                }
+            }).mount();
+            </script>
+        </div>
+
+        <div>
+            <div id="app_model_text_ex1">
+                <h3>Input - Text</h4>
+                <div class="example">
+                    <input hc:model="val" hc:input="onInput" id="model_input_text" type="text" style="width:250px;">
+                    <label hc:ref="label"></label>
+                    <br />
+                    <button hc:if="visible.btn" hc:click="setModelVal('')">model set empty</button>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_model_text_ex1"&gt;
+    &lt;h3&gt;Input - Text&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;input hc:model="val" id="model_input_text" type="text"&gt;&lt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+new Hacci({
+    el: document.querySelector('#app_model_text_ex1'),
+    data: {
+        val: 'All work and no play makes jack a dull boy!'
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_model_text_ex1'),
+                data: {
+                    val: 'All work and no play makes jack a dull boy!',
+                    visible: {
+                        btn: false,
+                    }
+                },
+                method: {
+                    onInput: function() {
+                        this.refs.label.innerText = ' / model val is "' + this.val + '"';
+                        this.visible.btn = this.val !== '';
+                    },
+                    setModelVal: function(val) {
+                        this.val = val;
+                    }
+                },
+                mounted: function() {
+                    this.onInput();
+                    //
+                    // this.refs.code.innerHTML = this.el.querySelector('#app_model_radio').outerHTML.replace(/\s*<!--.*-->/g, '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/            /g, '');
+                }
+            }).mount();
+            </script>
+        </div>
+
+        <div>
+            <div id="app_model_textarea_ex1">
+                <h3>Input - Textarea</h4>
+                <div class="example">
+                    <textarea hc:model="val" hc:input="onInput" id="model_input_textarea" style="width:250px; height:40px;"></textarea>
+                    <label hc:ref="label"></label>
+                    <br />
+                    <button hc:if="visible.btn" hc:click="setModelVal('')">model set empty</button>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_model_textarea_ex1"&gt;
+    &lt;h3&gt;Input - Textarea&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;textarea hc:model="val" id="model_input_textarea" type="text"&gt;&lt;&lt;/textarea&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+new Hacci({
+    el: document.querySelector('#app_model_textarea_ex1'),
+    data: {
+        val: 'All work and no play makes jack a dull boy!'
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_model_textarea_ex1'),
+                data: {
+                    val: 'All work and no play makes jack a dull boy!',
+                    visible: {
+                        btn: false,
+                    }
+                },
+                method: {
+                    onInput: function() {
+                        this.refs.label.innerText = ' / model val is "' + this.val + '"';
+                        this.visible.btn = this.val !== '';
+                    },
+                    setModelVal: function(val) {
+                        this.val = val;
+                    }
+                },
+                mounted: function() {
+                    this.onInput();
+                    //
+                    // this.refs.code.innerHTML = this.el.querySelector('#app_model_radio').outerHTML.replace(/\s*<!--.*-->/g, '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/            /g, '');
+                }
+            }).mount();
+            </script>
+        </div>
+
+        <div>
+            <div id="app_model_texthtml_ex1">
+                <h3>Text/Html</h4>
+                <div class="example">
+                    <input hc:model="val" type="text">
+                    <br />
+                    TEXT: <label hc:text="val"></label>
+                    <br />
+                    HTML: <label hc:html="val"></label>
+                    <br />
+                    <button hc:click="setText('Hello, World!')">text set to 'Hello, World!'</button>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_model_texthtml_ex1"&gt;
+    &lt;h3&gt;Text/Html&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;input hc:model="val" type="text"&gt;
+        &lt;br /&gt;
+        TEXT: &lt;label hc:text="val"&gt;&lt;/label&gt;
+        &lt;br /&gt;
+        HTML: &lt;label hc:html="val"&gt;&lt;/label&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+new Hacci({
+    el: document.querySelector('#app_model_texthtml_ex1'),
+    data: {
+        val: 'All work and no play makes jack a dull boy!'
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_model_texthtml_ex1'),
+                data: {
+                    val: 'All work and no play makes jack a dull boy!'
+                },
+                method: {
+                    setText: function(text) {
+                        this.val = text;
+                    }
+                }
+            }).mount();
+            </script>
+        </div>
+        <hr />
+        
+        <h2>Event</h2>
+
+        <div>
+            <div id="app_event_change_ex1">
+                <h3>Change (for radio, checkbox)</h4>
+                <div class="example">
+                    <input hc:model="val" hc:change="onChange" id="model_input_change_ex1_1" type="radio" value="red"><label for="model_input_change_ex1_1">red</label>
+                    <br />
+                    <input hc:model="val" hc:change="onChange" id="model_input_change_ex1_21" name="model_input_change_ex1_group1" type="radio" value="red"><label for="model_input_change_ex1_21">red</label>
+                    <input hc:model="val" hc:change="onChange" id="model_input_change_ex1_22" name="model_input_change_ex1_group1" type="radio" value="green"><label for="model_input_change_ex1_22">green</label>
+                    <input hc:model="val" hc:change="onChange" id="model_input_change_ex1_23" name="model_input_change_ex1_group1" type="radio" value="yellow"><label for="model_input_change_ex1_23">yellow</label>
+                    <br />
+                    <input hc:model="val" hc:change="onChange" id="model_input_change_ex1_3" type="checkbox" value="red"><label for="model_input_change_ex1_3">red</label>
+                    <br />
+                    <select hc:model="val" hc:change="onChange">
+                        <option value="red">red</option>
+                        <option value="green">green</option>
+                        <option value="yellow">yellow</option>
+                    </select>
+                    <br />
+                    <label hc:ref="label"></label>
+                    <br />
+                    <button hc:if="visible.btn" hc:click="setModelVal(null)">model set null</button>
+                    <button hc:neither="visible.btn" hc:click="setModelVal('red')">model set red</button>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_event_change_ex1"&gt;
+    &lt;h3&gt;Change (for radio, checkbox)&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;input hc:model="val" hc:change="onChange" id="model_input_change_ex1_1" type="radio" value="red"&gt;&lt;label for="model_input_change_ex1_1"&gt;red&lt;/label&gt;
+        &lt;br /&gt;
+        &lt;input hc:model="val" hc:change="onChange" id="model_input_change_ex1_21" name="model_input_change_ex1_group1" type="radio" value="red"&gt;&lt;label for="model_input_change_ex1_21"&gt;red&lt;/label&gt;
+        &lt;input hc:model="val" hc:change="onChange" id="model_input_change_ex1_22" name="model_input_change_ex1_group1" type="radio" value="green"&gt;&lt;label for="model_input_change_ex1_22"&gt;green&lt;/label&gt;
+        &lt;input hc:model="val" hc:change="onChange" id="model_input_change_ex1_23" name="model_input_change_ex1_group1" type="radio" value="yellow"&gt;&lt;label for="model_input_change_ex1_23"&gt;yellow&lt;/label&gt;
+        &lt;br /&gt;
+        &lt;input hc:model="val" hc:change="onChange" id="model_input_change_ex1_3" type="checkbox" value="red"&gt;&lt;label for="model_input_change_ex1_3"&gt;red&lt;/label&gt;
+        &lt;br /&gt;
+        &lt;select hc:model="val" hc:change="onChange"&gt;
+            &lt;option value="red"&gt;red&lt;/option&gt;
+            &lt;option value="green"&gt;green&lt;/option&gt;
+            &lt;option value="yellow"&gt;yellow&lt;/option&gt;
+        &lt;/select&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+new Hacci({
+    el: document.querySelector('#app_model_textarea_ex1'),
+    data: {
+        val: 'green'
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_event_change_ex1'),
+                data: {
+                    val: 'green',
+                    visible: {
+                        btn: false
+                    }
+                },
+                method: {
+                    setModelVal: function(val) {
+                        this.val = val;
+                    },
+                    onChange: function() {
+                        this.refs.label.innerText = ' / model val is ' + this.val;
+                    }
+                },
+                mounted: function() {
+                    this.onChange();
+                }
+            }).mount();
+            </script>
+        </div>
+
+        <div>
+            <div id="app_event_change_ex2">
+                <h3>Change (for checkbox, select)</h4>
+                <div class="example">
+                    <input hc:model="val" hc:change="onChange" id="model_input_change_ex2_21" name="model_input_change_ex2_group2" type="checkbox" value="red"><label for="model_input_change_ex2_21">red</label>
+                    <input hc:model="val" hc:change="onChange" id="model_input_change_ex2_22" name="model_input_change_ex2_group2" type="checkbox" value="green"><label for="model_input_change_ex2_22">green</label>
+                    <input hc:model="val" hc:change="onChange" id="model_input_change_ex2_23" name="model_input_change_ex2_group2" type="checkbox" value="yellow"><label for="model_input_change_ex2_23">yellow</label>
+                    <br />
+                    <select hc:model="val" hc:change="onChange" multiple>
+                        <option value="red">red</option>
+                        <option value="green">green</option>
+                        <option value="yellow">yellow</option>
+                    </select>
+                    <label hc:ref="label"></label>
+                    <br />
+                    <button hc:click="clearColor()">model set []</button>
+                    <button hc:click="toggleColor('red')" style="background-color: red; border: 1px solid #aaaaaa;">model toggle red</button>
+                    <button hc:click="toggleColor('green')" style="background-color: green; border: 1px solid #aaaaaa;">model toggle green</button>
+                    <button hc:click="toggleColor('yellow')" style="background-color: yellow; border: 1px solid #aaaaaa;">model toggle yellow</button>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_event_change_ex2"&gt;
+    &lt;h3&gt;Change (for checkbox, select)&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;input hc:model="val" hc:change="onChange" id="model_input_change_ex2_21" name="model_input_change_ex2_group2" type="checkbox" value="red"&gt;&lt;label for="model_input_change_ex2_21"&gt;red&lt;/label&gt;
+        &lt;input hc:model="val" hc:change="onChange" id="model_input_change_ex2_22" name="model_input_change_ex2_group2" type="checkbox" value="green"&gt;&lt;label for="model_input_change_ex2_22"&gt;green&lt;/label&gt;
+        &lt;input hc:model="val" hc:change="onChange" id="model_input_change_ex2_23" name="model_input_change_ex2_group2" type="checkbox" value="yellow"&gt;&lt;label for="model_input_change_ex2_23"&gt;yellow&lt;/label&gt;
+        &lt;br /&gt;
+        &lt;select hc:model="val" hc:change="onChange" multiple&gt;
+            &lt;option value="red"&gt;red&lt;/option&gt;
+            &lt;option value="green"&gt;green&lt;/option&gt;
+            &lt;option value="yellow"&gt;yellow&lt;/option&gt;
+        &lt;/select&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+new Hacci({
+    el: document.querySelector('#app_event_change_ex2'),
+    data: {
+        val: []
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_event_change_ex2'),
+                data: {
+                    val: [],
+                    visible: {
+                        btn: false,
+                    }
+                },
+                method: {
+                    onChange: function() {
+                        this.refs.label.innerText = ' / model val is ' + this.val;
+                        this.visible.btn = this.val !== null;
+                    },
+                    setModelVal: function(val) {
+                        this.val = val;
+                    },
+                    clearColor: function() {
+                        this.val = [];
+                    },
+                    toggleColor: function(color) {
+                        var idx = this.val.indexOf(color);
+                        if (idx > -1) {
+                            this.val.splice(idx, 1);
+                        }
+                        else {
+                            this.val.push(color);
+                        }
+                    }
+                },
+                mounted: function() {
+                    this.onChange();
+                    //
+                    // this.refs.code.innerHTML = this.el.querySelector('#app_model_radio').outerHTML.replace(/\s*<!--.*-->/g, '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/            /g, '');
+                }
+            }).mount();
+            </script>
+        </div>
+
+        <div>
+            <div id="app_event_input_ex1">
+                <h3>Input (for text, textarea)</h4>
+                <div class="example">
+                    <input hc:model="val" hc:input="onInput" type="text">
+                    <br />
+                    <textarea hc:model="val" hc:input="onInput"></textarea>
+                    <br />
+                    <label hc:ref="label"></label>
+                    <br />
+                    <button hc:if="visible.btn" hc:click="setModelVal('')">model set empty</button>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_event_input_ex1"&gt;
+    &lt;h3&gt;Input (for text, textarea)&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;input hc:model="val" hc:input="onInput" type="text"&gt;
+        &lt;br /&gt;
+        &lt;textarea hc:model="val" hc:input="onInput"&gt;&lt;/textarea&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+new Hacci({
+    el: document.querySelector('#app_event_input_ex1'),
+    data: {
+        val: 'All work and no play makes jack a dull boy!'
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_event_input_ex1'),
+                data: {
+                    val: 'All work and no play makes jack a dull boy!',
+                    visible: {
+                        btn: false,
+                    }
+                },
+                method: {
+                    onInput: function() {
+                        this.refs.label.innerText = ' / model val is ' + this.val;
+                        this.visible.btn = this.val !== null;
+                    },
+                    setModelVal: function(val) {
+                        this.val = val;
+                    }
+                },
+                mounted: function() {
+                    this.onInput();
+                }
+            }).mount();
+            </script>
+        </div>
+
+        <div>
+            <div id="app_event_click_ex1">
+                <h3>Click</h4>
+                <div class="example">
+                    <button hc:click="onClick('#1', _event)">#1</button>
+                    <button hc:click="onClick('#2', _event)">#2</button>
+                    <div hc:click="onClick('#3', _event)" style="border: 1px solid red; background-color: #bcbcbc; width: 100px; height: 20px;">#3</div>
+                    <br />
+                    <label hc:ref="label"></label>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_event_click_ex1"&gt;
+    &lt;h3&gt;Click&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;button hc:click="onClick('#1', _event)"&gt;#1&lt;/button&gt;
+        &lt;button hc:click="onClick('#2', _event)"&gt;#2&lt;/button&gt;
+        &lt;div hc:click="onClick('#3', _event)" style="border: 1px solid red; background-color: #bcbcbc; width: 100px; height: 20px;"&gt;#3&lt;/div&gt;
+        &lt;br /&gt;
+        &lt;label hc:ref="label"&gt;&lt;/label&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+new Hacci({
+    el: document.querySelector('#app_event_input_ex1'),
+    data: {
+        val: null
+    },
+    method: {
+        onClick: function(val, e) {
+            this.refs.label.innerHTML = val + ' clicked - ' + e.target.outerHTML.replace(/</, '&lt;').replace(/>/, '&gt;');
+        }
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_event_click_ex1'),
+                data: {
+                    val: null,
+                    visible: {
+                        btn: false,
+                    }
+                },
+                method: {
+                    onClick: function(val, e) {
+                        this.refs.label.innerHTML = val + ' clicked - ' + e.target.outerHTML.replace(/</, '&lt;').replace(/>/, '&gt;');
+                    },
+                }
+            }).mount();
+            </script>
+        </div>
+
+        <div>
+            <div id="app_event_scroll_ex1">
+                <h3>Scroll (scroll, scroll.hit.top, scroll.hit.bottom)</h4>
+                <div class="example">
+                    <div hc:scroll="onScroll" hc:scroll.hit.top="onTop" hc:scroll.hit.bottom="onBottom" style="width: 300px; height: 100px; overflow-y: scroll; border: 1px solid gray;">
+                        TOP<hr />
+                        1<br />2<br />3<br />4<br />5<hr />
+                        1<br />2<br />3<br />4<br />5<hr />
+                        1<br />2<br />3<br />4<br />5<hr />
+                        1<br />2<br />3<br />4<br />5<hr />
+                        BOTTOM
+                    </div>
+                    <br />
+                    <label hc:html="label"></label>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_event_scroll_ex1"&gt;
+    &lt;h3&gt;Scroll (scroll, scroll.hit.top, scroll.hit.bottom)&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;div hc:scroll="onScroll" hc:scroll.hit.top="onTop" hc:scroll.hit.bottom="onBottom" style="width: 300px; height: 100px; overflow-y: scroll; border: 1px solid gray;"&gt;
+            TOP&lt;hr /&gt;
+            1&lt;br /&gt;2&lt;br /&gt;3&lt;br /&gt;4&lt;br /&gt;5&lt;hr /&gt;
+            1&lt;br /&gt;2&lt;br /&gt;3&lt;br /&gt;4&lt;br /&gt;5&lt;hr /&gt;
+            1&lt;br /&gt;2&lt;br /&gt;3&lt;br /&gt;4&lt;br /&gt;5&lt;hr /&gt;
+            1&lt;br /&gt;2&lt;br /&gt;3&lt;br /&gt;4&lt;br /&gt;5&lt;hr /&gt;
+            BOTTOM
+        &lt;/div&gt;
+        &lt;br /&gt;
+        &lt;label hc:html="label"&gt;&lt;/label&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script type="text/javascript"&gt;
+new Hacci({
+    el: document.querySelector('#app_event_scroll_ex1'),
+    data: {
+        label: '',
+        onTopOrBottom: false
+    },
+    method: {
+        onScroll: function() {
+            if (this.onTopOrBottom) return;
+            this.label = '&lt;div style="color: #666666;"&gt;on scrolling...&lt;/div&gt;';
+        },
+        onTop: function() {
+            // to display message for a while
+            this.onTopOrBottom = true;
+            setTimeout(function() { this.onTopOrBottom = false; }.bind(this), 200);
+            //
+            this.label = '&lt;div style="color: #ff0000; font-weight: bold;"&gt;scroll top hit!&lt;/div&gt;';
+        },
+        onBottom: function() {
+            // to display message for a while
+            this.onTopOrBottom = true;
+            setTimeout(function() { this.onTopOrBottom = false; }.bind(this), 200);
+            //
+            this.label = '&lt;div style="color: #0000ff; font-weight: bold;"&gt;scroll bottom hit!&lt;/div&gt;';
+        }
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_event_scroll_ex1'),
+                data: {
+                    label: '',
+                    onTopOrBottom: false
+                },
+                method: {
+                    onScroll: function() {
+                        if (this.onTopOrBottom) return;
+                        this.label = '<div style="color: #666666;">on scrolling...</div>';
+                    },
+                    onTop: function() {
+                        // to display message for a while
+                        this.onTopOrBottom = true;
+                        setTimeout(function() { this.onTopOrBottom = false; }.bind(this), 200);
+                        //
+                        this.label = '<div style="color: #ff0000; font-weight: bold;">scroll top hit!</div>';
+                    },
+                    onBottom: function() {
+                        // to display message for a while
+                        this.onTopOrBottom = true;
+                        setTimeout(function() { this.onTopOrBottom = false; }.bind(this), 200);
+                        //
+                        this.label = '<div style="color: #0000ff; font-weight: bold;">scroll bottom hit!</div>';
+                    }
+                }
+            }).mount();
+            </script>
+        </div>
+        <hr />
+
+        <h2>Condition</h2>
+
+        <div>
+            <div id="app_condition_if_ex1">
+                <h3>If / Neither</h4>
+                <div class="example">
+                    <label hc:if="visible">visible is true</label>
+                    <label hc:neither="visible">visible is false</label>
+                    <br />
+                    <button hc:click="setVisible(true)">set visible true</button>
+                    <button hc:click="setVisible(false)">set visible false</button>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_condition_if_ex1"&gt;
+    &lt;h3&gt;If / Neither&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;label hc:if="visible"&gt;visible is true&lt;/label&gt;
+        &lt;label hc:neither="visible"&gt;visible is false&lt;/label&gt;
+        &lt;br /&gt;
+        &lt;button hc:click="setVisible(true)"&gt;set visible true&lt;/button&gt;
+        &lt;button hc:click="setVisible(false)"&gt;set visible false&lt;/button&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+new Hacci({
+    el: document.querySelector('#app_condition_if_ex1'),
+    data: {
+        visible: true
+    },
+    method: {
+        setVisible: function(val) {
+            this.visible = val;
+        }
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                    el: document.querySelector('#app_condition_if_ex1'),
+                    data: {
+                        visible: true
+                    },
+                    method: {
+                        setVisible: function(val) {
+                            this.visible = val;
+                        },
+                    }
+                }).mount();
+            </script>
+        </div>
+        
+        <div>
+            <div id="app_condition_disabled_ex1">
+                <h3>Disabled</h4>
+                <div class="example">
+                    <button hc:disabled="avail" hc:html="message"></button>
+                    <br />
+                    <button hc:neither="avail" hc:click="setAvail(true)">set disabled true</button>
+                    <button hc:if="avail" hc:click="setAvail(false)">set disabled false</button>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_condition_disabled_ex1"&gt;
+    &lt;h3&gt;Disabled&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;button hc:disabled="avail" hc:html="message"&gt;&lt;/button&gt;
+        &lt;br /&gt;
+        &lt;button hc:neither="avail" hc:click="setAvail(true)"&gt;set disabled true&lt;/button&gt;
+        &lt;button hc:if="avail" hc:click="setAvail(false)"&gt;set disabled false&lt;/button&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script type="text/javascript"&gt;
+new Hacci({
+    el: document.querySelector('#app_condition_disabled_ex1'),
+    data: {
+        avail: false,
+        message: '',
+    },
+    method: {
+        setAvail: function(val) {
+            this.avail = val;
+            this.message = 'button is ' + (val ? 'disabled' : 'enabled');
+        },
+    },
+    mounted: function() {
+        this.setAvail(false);
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                el: document.querySelector('#app_condition_disabled_ex1'),
+                data: {
+                    avail: false,
+                    message: '',
+                },
+                method: {
+                    setAvail: function(val) {
+                        this.avail = val;
+                        this.message = 'button is ' + (val ? 'disabled' : 'enabled');
+                    },
+                },
+                mounted: function() {
+                    this.setAvail(false);
+                }
+            }).mount();
+            </script>
+        </div>
+        
+        <div>
+            <div id="app_template_ex1">
+                <h3>Template</h4>
+                <div class="example">
+                    <div class="pop_cnt">
+                        Enter code ({{code.length}}/4)
+                        <div class="bg_al_success1">
+                            <input hc:model="code" hc:input="onInput" type="text">
+                        </div>
+                        <div hc:if="result_visible">
+                            <p class="cmt">'{{code}}'</p>
+                            code is {{result ? 'correct' : 'incorrect'}}!
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_template_ex1"&gt;
+    &lt;h3&gt;Template&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;div class="pop_cnt"&gt;
+            Enter code ({{code.length}}/4)
+            &lt;div class="bg_al_success1"&gt;
+                &lt;input hc:model="code" hc:input="onInput" type="text"&gt;
+            &lt;/div&gt;
+            &lt;div hc:if="result_visible"&gt;
+                &lt;p class="cmt"&gt;'{{code}}'&lt;/p&gt;
+                code is {{result ? 'correct' : 'incorrect'}}!
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script type="text/javascript"&gt;
+window.hc = new Hacci({
+    el: document.querySelector('#app_template_ex1'),
+    data: {
+        code: '',
+        result_visible: false,
+        result: false
+    },
+    method: {
+        onInput: function(_evt) {
+            this.result_visible = this.code.length &gt; 0;
+            this.result = this.code === '1234';
+        }
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            window.hc = new Hacci({
+                el: document.querySelector('#app_template_ex1'),
+                data: {
+                    code: '',
+                    result_visible: false,
+                    result: false
+                },
+                method: {
+                    onInput: function(_evt) {
+                        this.result_visible = this.code.length > 0;
+                        this.result = this.code === '1234';
+                    }
+                }
+            }).mount();
+            </script>
+        </div>
+    </body>
+</html>
