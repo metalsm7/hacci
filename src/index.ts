@@ -29,21 +29,20 @@ class Hacci {
     //
     private _refs: any = {};
     private _traces: any = {
-        model: {},
+        model: {
+            value: {},
+            listen: null,
+        },
+        elements: [],
     };
-    //
-    private _objs: any = {};
-    //
-    private _txts: any[] = [];
-    private _txts_mstr: string = null;
+    private _txts_mstr = null;
+    private _event_listeners = [];
     //
     private _on: any = {
         created: null,
         mounted: null,
         destroyed: null,
     };
-    //
-    private _event_listeners: Array<HacciEventListener> = [];
     //
     private _toi_input = [
         'email', 'hidden', 'number', 'password', 'search', 'tel', 'url', 'datetime', 'text', 'textarea'
@@ -89,17 +88,17 @@ class Hacci {
         //
         if (option.data) {
             //
-            // this.redefineModel(option.data);
-            //
             const data_keys = Object.keys(option.data);
             for (let cnti: number = 0; cnti < data_keys.length; cnti++) {
                 this[data_keys[cnti]] = option.data[data_keys[cnti]];
+                // test
+                this.redefineModel(data_keys[cnti]);
                 //
-                this.traceModel({
-                    parent: this,
-                    property: data_keys[cnti],
-                    value: null, // attrs[cnti].value,
-                })
+                // this.traceModel({
+                //     parent: this,
+                //     property: data_keys[cnti],
+                //     value: null, // attrs[cnti].value,
+                // })
             }
         }
         //
@@ -128,323 +127,494 @@ class Hacci {
         this._on && this._on.created && this._on.created();
     }
 
-    /**
-     * 초기화
-     */
     private init(): void {
         //
-        const self = this;
-        //
-        if (this.el) {
-            //
-            const observer = new MutationObserver((mutationsList, observer) => {
-                for(const mutation of mutationsList) {
-                    if (mutation.type === 'childList') {
-                        //
-                        const nodes = mutation.removedNodes;
-                        const content_removed = nodes && nodes.length > 0 && (nodes[0] === this.el);
-                        if (content_removed) {
-                            //
-                            observer.disconnect();
-                            //
-                            this.clearEventListeners();
-                            //
-                            this.destroy();
-                        }
-                    }
-                }
-            });
-            observer.observe(this.el.parentElement, { attributes: false, childList: true, subtree: false });
-
-            //
-            this.searchTextNodes();
-
-            //
-            const objs: NodeList = this.el.querySelectorAll('*');
-            //
-            for (let cnti = 0; cnti < objs.length; cnti++) {
-                const obj = objs[cnti] as HTMLInputElement;
-
-                // 1. attribute 처리
-
-                //
-                const attrs = obj['attributes'];
-                //
-                for (let cnti: number = 0; cnti < attrs.length; cnti++) {
-                    if (/^hc:(model|if|neither|disabled|html|text)$/.test(attrs[cnti].name)) {
-                        //
-                        this.traceModel({
-                            parent: this,
-                            property: attrs[cnti].value,
-                            value: null, // attrs[cnti].value,
-                        })
-
-                        //
-                        if (/^hc:(if|neither)$/.test(attrs[cnti].name)) {
-                            const model = this.getVal(attrs[cnti].value, this);
-                            if (
-                                /^hc:if$/.test(attrs[cnti].name) && model.val === false ||
-                                /^hc:neither$/.test(attrs[cnti].name) && model.val === true
-                            ) {
-                                //hc:
-                                const tag_id = self.createTagId();
-                                const blankEl = window.document.createComment(`//hc:${self._id}:${tag_id}`);
-                                obj.parentNode.insertBefore(blankEl, obj);
-                                //
-                                !self._objs[attrs[cnti].value] && (self._objs[attrs[cnti].value] = []);
-                                self._objs[attrs[cnti].value].push({
-                                    type: 'if',
-                                    tag_id,
-                                    parent: obj.parentElement,
-                                    element: obj,
-                                });
-                                obj.parentNode.removeChild(obj);
-                            }
-                        }
-                        else if (/^hc:disabled$/.test(attrs[cnti].name)) {
-                            const model = this.getVal(attrs[cnti].value, this);
-                            obj.disabled = model.val;
-                        }
-                        else if (/^hc:html$/.test(attrs[cnti].name)) {
-                            const model = this.getVal(attrs[cnti].value, this);
-                            obj.innerHTML = model.val;
-                        }
-                        else if (/^hc:text$/.test(attrs[cnti].name)) {
-                            const model = this.getVal(attrs[cnti].value, this);
-                            obj.innerText = model.val;
-                        }
-                        else if (!/^hc:model$/.test(attrs[cnti].name)) {
-                            continue;
-                        }
-                        //
-                        if (obj.tagName === 'INPUT' && self._toi_check.indexOf(obj.type) > -1) {
-                            // 초기값 설정
-                            const model = this.getVal(attrs[cnti].value, this);
-                            //
-                            const group_name = obj.hasAttribute('name') ? obj.getAttribute('name') : null;
-                            if (group_name) {
-                                const groups = self.el.querySelectorAll(`*[name=${group_name}]`);
-                                self.setCheckedValue(groups, model.val);
-                            }
-                            else {
-                                obj.checked = obj.value == model.val;
-                            }
-                            // 이벤트 처리 등록
-                            obj.addEventListener('change', (_evt) => {
-                                let checked_value = null;
-                                (obj.type === 'radio') && (checked_value = obj.checked ? obj.value : null);
-                                (obj.type === 'checkbox') && (checked_value = obj.checked ? obj.value : (obj.hasAttribute('name') ? [] : null));
-                                //
-                                const group_name = obj.hasAttribute('name') ? obj.getAttribute('name') : null;
-                                if (group_name) {
-                                    const groups = self.el.querySelectorAll(`*[name=${group_name}]`);
-                                    checked_value = self.getCheckedValue(groups, obj.type === 'checkbox');
-                                }
-                                else {
-                                    obj.checked = obj.value == model.val;
-                                }
-                                //
-                                // Array.isArray(checked_value) && self.arrayEventListener(model.prop, checked_value);
-                                Array.isArray(checked_value) && self.arrayEventListener(attrs[cnti].value, checked_value);
-                                //
-                                const target_obj = self.getVal(attrs[cnti].value, self._traces.model, '__');
-                                target_obj.parent[target_obj.prop] = checked_value;
-                                //
-                                // console.log(`init - ${obj.tagName} - ${obj.type} - changed`);
-                                this.modelTrigger(obj);
-                            });
-                        }
-                        else if (obj.tagName === 'SELECT' && self._toi_select.indexOf(obj.type) > -1) {
-                            // 초기값 설정
-                            const model = this.getVal(attrs[cnti].value, this);
-                            //
-                            const groups = obj.querySelectorAll(`option`);
-                            self.setSelectedValue(groups, model.val);
-                            // 이벤트 처리 등록
-                            obj.addEventListener('change', (_evt) => {
-                                let checked_value = (obj.type === 'select-one') ? null : [];
-                                //
-                                const groups = obj.querySelectorAll(`option`);
-                                checked_value = self.getSelectedValue(groups, obj.type === 'select-multiple');
-                                //
-                                // Array.isArray(checked_value) && self.arrayEventListener(model.prop, checked_value);
-                                Array.isArray(checked_value) && self.arrayEventListener(attrs[cnti].value, checked_value);
-                                //
-                                const target_obj = self.getVal(attrs[cnti].value, self._traces.model, '__');
-                                target_obj.parent[target_obj.prop] = checked_value;
-                                //
-                                this.modelTrigger(obj);
-                            });
-                        }
-                        else if (['INPUT', 'TEXTAREA'].indexOf(obj.tagName) > -1 && self._toi_input.indexOf(obj.type) > -1) {
-                            // 초기값 설정
-                            const model = this.getVal(attrs[cnti].value, this);
-                            //
-                            obj.value = model.val;
-                            // 이벤트 처리 등록
-                            obj.addEventListener('input', (_evt) => {
-                                // console.log(`on.input`);
-                                let checked_value = obj.value;
-                                //
-                                const target_obj = self.getVal(attrs[cnti].value, self._traces.model, '__');
-                                target_obj.parent[target_obj.prop] = checked_value;
-                                //
-                                this.modelTrigger(obj);
-                            });
-                        }
-                    }
-                }
-
-                // 2. text 처리
-                // const text = obj.innerText;
-            }
-            //
-            for (let cnti = 0; cnti < objs.length; cnti++) {
-                const obj = objs[cnti];
-                //
-                const attrs = obj['attributes'];
-                //
-                for (let cnti: number = 0; cnti < attrs.length; cnti++) {
-                    if (/^hc:(ref|click|scroll(\.hit\.(top|bottom))?)$/.test(attrs[cnti].name)) {
-                        //
-                        switch (attrs[cnti].name) {
-                            case 'hc:ref':
-                                this._refs[attrs[cnti].value] = obj;
-                                break;
-                            case 'hc:click':
-                            case 'hc:scroll':
-                                this.registEventListener((obj as HTMLInputElement), attrs[cnti].name.substring(3), attrs[cnti]);
-                                break;
-                            case 'hc:scroll.hit.top':
-                            case 'hc:scroll.hit.bottom':
-                                this.registEventListener(
-                                    obj as Element,
-                                    'scroll',
-                                    attrs[cnti],
-                                    function(evt: Event) {
-                                        if (
-                                            attrs[cnti].name.indexOf('bottom') > -1 ?
-                                                (self.scrollTop(obj as Element) + self.innerHeight(obj) >= self.scrollHeight(obj as Element)) :
-                                                (self.scrollTop(obj as Element) <= 0)
-                                        ) {
-                                            self.callMethod({
-                                                attr: attrs[cnti],
-                                                evt
-                                            });
-                                        }
-                                    }
-                                );
-                                break;
-                        }
-                    }
-                }
-            }
-        }
-        //
-        this._on && this._on.mounted && this._on.mounted();
-    }
-
-    /**
-     * HTML 변경된 경우 이를 반영시키기 위해 기존 자료 삭제 및 초기화 처리
-     */
-    public refresh(): void {
-        //
-        this.clearData();
-        //
-        this.clearEventListeners();
-        //
-        this.init();
-    }
-
-    /**
-     * model 정보 초기화
-     */
-    public clearData(): void {
-        //
-        const regx = new RegExp(/^__hc\.(v_.+|lstn$|refs$)/);
-        //
-        const keys = Object.keys(this);
-        for (let cnti: number = 0; cnti < keys.length; cnti++) {
-            if (regx.test(keys[cnti])) {
-                delete this[keys[cnti]];
-            }
-        }
-    }
-
-    private searchTextNodes(parent: Node = null): void {
-        !parent && (parent = this.el);
-        //
-        if (parent.hasChildNodes()) {
-            for (let cnti: number = 0; cnti < parent.childNodes.length; cnti++) {
-                switch (parent.childNodes[cnti].nodeType) {
-                    case 1: // element
-                        this.searchTextNodes(parent.childNodes[cnti]);
-                        break;
-                    case 3: // text
-                        /{{([^}}\r\n]+)?}}/g.test(parent.childNodes[cnti].textContent) &&
-                            this._txts.push({
-                                node: parent.childNodes[cnti],
-                                text: parent.childNodes[cnti].textContent,
-                                fn: null    // 컴파일된 함수
-                            });
-                        break;
-                }
-            }
-
-            // 모델 변경시 text 변경 처리용
-            this.applyTextChange();
-        }
-    }
-
-    /**
-     * 대상 문자열에 대한 보간 처리
-     */
-    private applyTextChange(): void {
-        for (let cnti: number = 0; cnti < this._txts.length; cnti++) {
-            if (!this._txts[cnti].fn) {
-                this._txts[cnti].fn = this.compileText(this._txts[cnti].text);
-            }
-            this._txts[cnti].node.textContent = this._txts[cnti].fn.apply(this);
-        }
-    }
-
-    /**
-     * 문자열 보간
-     * @param html 
-     */
-    // private compileText(html: string, options: any): Function {
-    private compileText(html: string): Function {
-        //
-        if (!this._txts_mstr) {
-            this._txts_mstr = '';
-            const keys: string[] = Object.keys(this);
-            for (let cnti: number = 0; cnti < keys.length; cnti++) {
-                if (keys[cnti].length > 1 && keys[cnti].charAt(0) === '_') continue;
-                this._txts_mstr += `var ${keys[cnti]}=this.${keys[cnti]};\n`;
-            }
-        }
-        // /(?<!{)(?:{{2})(?!{)([^}{2}\r\n]+)?(?<!})(?:}{2})(?!})/g
-        let re: RegExp = /{{([^}}]+)?}}/g, reExp: RegExp = /(^( )?(if|for|else|switch|case|break|{|}))(.*)?/g, code: string = this._txts_mstr + 'var r=[];\n', cursor: number = 0, match: any;
-        const add = function(line: any, js: any = null) {
-            js? (code += line.match(reExp) ? line + '\n' : 'r.push(' + line + ');\n') :
-                (code += line != '' ? 'r.push("' + line.replace(/"/g, '\\"') + '");\n' : '');
-            return add;
-        }
-        while (match = re.exec(html)) {
-            add(html.slice(cursor, match.index))(match[1], true);
-            cursor = match.index + match[0].length;
-        }
-        add(html.substr(cursor, html.length - cursor));
-        code += 'return r.join("");';
-        // return (new Function(code.replace(/[\r\t\n]/g, ''))).apply(options);
-        return new Function(code.replace(/[\r\t\n]/g, ''));
-    }
-
-    private registEventListener(el: Element, name: string, attr: any, listener: EventListenerOrEventListenerObject = null): void {
         const self: Hacci = this;
         //
+        const calcRes = function(val: string): any {
+            const fn = new Function(`${self._txts_mstr}return ${val};`);
+            let fnRes = fn.apply(self);
+            typeof(fnRes) === 'function' && (fnRes = fnRes());
+            return fnRes;
+        }
+        //
+        const callSet = function(model: string, val: any): any {
+            console.log(`init - callSet - this.${model}=${val};`)
+            const fn = new Function(`console.log('this.${model}='+arguments[0]);this.${model}=arguments[0];`);
+            return fn.apply(self, [val]);
+        }
+        //
+        const call = function(val: string): any {
+            let exec = val;
+            if (val.indexOf('(') < 0) {
+                exec += '()';
+            }
+            exec = exec.replace(/;$/, '');
+            console.log(`init - call - exec:${exec}`);
+            const fn = new Function(`${self._txts_mstr}return ${exec};`);
+            return fn.apply(self);
+        }
+        //
+        const els: NodeList = this.el.querySelectorAll('*');
+        for (let cnti: number = 0; cnti < els.length; cnti++) {
+            const obj: Node = els.item(cnti);
+            //
+            const attrs: NamedNodeMap = (obj as HTMLElement).attributes;
+            for (let cnti: number = 0; cnti < attrs.length; cnti++) {
+                const attr: Attr = attrs.item(cnti);
+                if ((/^hc:.+$/).test(attr.name)) {
+                    const hc_attr: string = attr.name.substring(3);
+                    console.log(`hc:${hc_attr}`);
+                    //
+                    // typeof(self._traces.element[hc_attr]) === 'undefined' &&
+                    //     (self._traces.element[hc_attr] = []);
+                    // //
+                    // self._traces.element[hc_attr].push(obj);
+
+                    //
+                    if (hc_attr == 'ref') {
+                        self._refs[attr.value] = obj;
+                        //
+                        if ((obj as HTMLElement).hasAttribute(attr.name)) {
+                            (obj as HTMLElement).removeAttribute(attr.name);
+                            --cnti;
+                        }
+                        //
+                        continue;
+                    }
+
+                    //
+                    self._traces.elements.indexOf(obj) < 0 &&
+                        self._traces.elements.push(obj);
+                    //
+                    !obj['_hc']&& (
+                        obj['_hc'] = {
+                            attr: {},
+                            comment: null,
+                        }
+                    );
+                    //
+                    if (hc_attr === 'neither') { // neither 지원
+                        obj['_hc'].attr['if'] = `!(${attr.value})`;
+                    }
+                    else {
+                        obj['_hc'].attr[hc_attr] = attr.value;
+                    }
+                    //
+                    if (hc_attr === 'model') { // model의 경우 change/input attr 존재 여부 확인
+                        //
+                        let val = calcRes(attr.value);
+                        Array.isArray(val) && self.arrayEventListener(val);
+                        //
+                        // input radio/checkbox
+                        (obj as HTMLInputElement).tagName === 'INPUT' &&
+                            ['radio', 'checkbox'].indexOf((obj as HTMLInputElement).type) > -1 &&
+                            obj.addEventListener('change', (_evt) => {
+                                console.log(`model.change`);
+                                //
+                                let checked_value = null;
+                                ((obj as HTMLInputElement).type === 'radio') && (checked_value = (obj as HTMLInputElement).checked ? (obj as HTMLInputElement).value : null);
+                                ((obj as HTMLInputElement).type === 'checkbox') && (checked_value = (obj as HTMLInputElement).checked ? (obj as HTMLInputElement).value : ((obj as HTMLInputElement).hasAttribute('name') ? [] : null));
+                                //
+                                console.log(`model.change - checked_value.#1:${checked_value}`);
+                                const group_name = (obj as HTMLInputElement).hasAttribute('name') ? (obj as HTMLInputElement).getAttribute('name') : null;
+                                if (group_name) {
+                                    const groups = self.el.querySelectorAll(`*[name=${group_name}]`);
+                                    checked_value = self.getCheckedValue(groups, (obj as HTMLInputElement).type === 'checkbox');
+                                    console.log(`model.change - group_name:${group_name} - checked_value.#2:${checked_value}`);
+                                }
+                                else {
+                                    console.log(`model.change - value - ${(obj as HTMLInputElement).value} / ${val}`);
+                                    // (obj as HTMLInputElement).checked = (obj as HTMLInputElement).value == val;
+                                    // (obj as HTMLInputElement).checked && (checked_value = (obj as HTMLInputElement).value);
+                                    checked_value = (obj as HTMLInputElement).checked ? (obj as HTMLInputElement).value : null;
+                                    console.log(`model.change - checked_value.#3:${checked_value}`);
+                                }
+                                //
+                                // Array.isArray(checked_value) && self.arrayEventListener(attrs[cnti].value, checked_value);
+                                //
+                                // self.applyModel();
+                                //
+                                obj['_hc:force_apply'] = true;
+                                //
+                                console.log(`model.change - callSet - ${attr.value} / ${checked_value}`);
+                                callSet(attr.value, checked_value);
+                            });
+
+                        // select
+                        (obj as HTMLInputElement).tagName === 'SELECT' &&
+                            ['select-one', 'select-multiple'].indexOf((obj as HTMLInputElement).type) > -1 &&
+                            obj.addEventListener('change', (_evt) => {
+                                //
+                                // let val = calcRes(attr.value);
+                                //
+                                let checked_value = ((obj as HTMLInputElement).type === 'select-one') ? null : [];
+                                //
+                                const groups = (obj as HTMLInputElement).querySelectorAll(`option`);
+                                checked_value = self.getSelectedValue(groups, (obj as HTMLInputElement).type === 'select-multiple');
+                                //
+                                // Array.isArray(checked_value) && self.arrayEventListener(attrs[cnti].value, checked_value);
+                                //
+                                //
+                                obj['_hc:force_apply'] = true;
+                                // self.applyModel();
+                                callSet(attr.value, checked_value);
+                            });
+
+                        // text/textarea
+                        ['INPUT', 'TEXTAREA'].indexOf((obj as HTMLInputElement).tagName) > -1 &&
+                            ['email', 'hidden', 'number', 'password', 'search', 'tel', 'url', 'datetime', 'text', 'textarea'].indexOf((obj as HTMLInputElement).type) > -1 &&
+                            obj.addEventListener('input', (_evt) => {
+                                //
+                                //
+                                obj['_hc:force_apply'] = true;
+                                // self.applyModel();
+                                callSet(attr.value, (obj as HTMLInputElement).value);
+                            });
+                    }
+                    //
+                    switch (hc_attr) {
+                        case 'click':
+                        case 'scroll':
+                            self.registEventListener((obj as HTMLInputElement), hc_attr, attr);
+                            break;
+                        case 'scroll.hit.top':
+                        case 'scroll.hit.bottom':
+                            self.registEventListener(
+                                obj as Element,
+                                'scroll',
+                                attr,
+                                function(evt: Event) {
+                                    if (
+                                        attr.name.indexOf('bottom') > -1 ?
+                                            (self.scrollTop(obj as Element) + self.innerHeight(obj) >= self.scrollHeight(obj as Element)) :
+                                            (self.scrollTop(obj as Element) <= 0)
+                                    ) {
+                                        call(attr.value);
+                                    }
+                                }
+                            );
+                            break;
+                    }
+
+                    //
+                    if ((obj as HTMLElement).hasAttribute(attr.name)) {
+                        (obj as HTMLElement).removeAttribute(attr.name);
+                        --cnti;
+                    }
+                }
+            }
+        };
+
+        //
+        this.applyModel();
+    }
+
+    private redefineModel(prop: string, parent: any = null, prev_model_prop: string = null): void {
+        const self: Hacci = this;
+        //
+        if (!self._traces.model.listen) {
+            // self._traces.model.listen = function(prop: string, val: any) {
+            //     console.log(`redefineModel.listen.#1 - prop:${prop} / val:${JSON.stringify(val)}`);
+            //     self.applyModel();
+            //     console.log(`redefineModel.listen.#2 - prop:${prop} / val:${JSON.stringify(val)}`);
+            // };
+            self._traces.model.listen = function() {
+                console.log(`redefineModel.listen.#1`);
+                self.applyModel();
+                console.log(`redefineModel.listen.#2`);
+            };
+        }
+        //
+        !parent && (parent = self);
+        const model = self._traces.model.value;
+        //
+        console.log(`redefineModel[${self._id}] - ${JSON.stringify({prop, prev_model_prop})}`);
+        //
+        const model_prop: string = prev_model_prop ? `${prev_model_prop}.__${prop}` : `__${prop}`;
+        console.log(`redefineModel - model_prop.${model_prop}`);
+        if (typeof(model[model_prop]) === 'undefined') {
+            model[model_prop] = parent[prop];
+        }
+        //
+        const val = parent[prop];
+
+        // 단일 자료 defineProperty 처리
+        Object.defineProperty(
+            parent,
+            prop,
+            {
+                get: () => {
+                    // console.log(`get:${prop} [${model_prop}]`);
+                    return model[model_prop];
+                },
+                set: (value: any) => {
+                    console.log(`set:${prop} [${model_prop}]`);
+                    //
+                    model[model_prop] = value;
+                    //
+                    self._traces.model.listen(model_prop, model[model_prop]);
+                }
+            }
+        );
+
+        //
+        // !(data[keys[cnti]] instanceof Object) -> number, string typeof
+        // (data[keys[cnti]] instanceof Object) -> object typeof
+        // (data[keys[cnti]] instanceof Array) -> object typeof
+        if ((val instanceof Object) && ['object'].indexOf(typeof(val)) > -1) {
+            //
+            const keys: string[] = Object.keys(val);
+            //
+            for (let cnti: number = 0; cnti < keys.length; cnti++) {
+                const key: string = keys[cnti];
+                //
+                this.redefineModel(key, val, model_prop);
+            }
+        }
+    }
+    
+    private applyModel(): void {
+        //
+        const self: Hacci = this;
+        //
+        if (!self._txts_mstr) {
+            self._txts_mstr = '';
+            const keys: string[] = Object.keys(self);
+            for (let cnti: number = 0; cnti < keys.length; cnti++) {
+                if (keys[cnti].length > 1 && keys[cnti].charAt(0) === '_') continue;
+                self._txts_mstr += `var ${keys[cnti]}=this.${keys[cnti]};\n`;
+            }
+        }
+
+        //
+        const calcRes = function(val: string): any {
+            const fn = new Function(`${self._txts_mstr}return ${val};`);
+            let fnRes = fn.apply(self);
+            typeof(fnRes) === 'function' && (fnRes = fnRes());
+            return fnRes;
+        }
+        //
+        const call = function(val: string): any {
+            let exec = val;
+            if (val.indexOf('(') < 0) {
+                exec += '()';
+            }
+            exec = exec.replace(/;$/, '');
+            console.log(`applyModel - call - exec:${exec}`);
+            const fn = new Function(`${self._txts_mstr}return ${exec};`);
+            return fn.apply(self);
+        }
+        //
+        const model_groups = [];
+        //
+        for (let cnti: number = 0; cnti < self._traces.elements.length; cnti++) {
+            //
+            const el: Node = self._traces.elements[cnti];
+            const hc = el['_hc'];
+
+            // // attribute 목록 확인
+            // const attrs: string[] = Object.keys(el['_hc'].attr);
+            // console.log(`_hc:${JSON.stringify(el['_hc'])}`);
+
+            // for (let cntk: number = 0; cntk < attrs.length; cntk++) {
+            //     const attr: string = attrs[cntk];
+            // }
+
+            //
+
+            // if
+            if (hc['attr']['if']) {
+                const fnRes = calcRes(hc['attr']['if']);
+                //
+                console.log(`if - ${hc['attr']['if']} = ${fnRes}`);
+                //
+                if (fnRes === true && hc['comment']) {
+                    // comment -> real
+                    console.log(`if - comment -> real`);
+
+                    //
+                    hc['comment'].parentNode.insertBefore(el, hc['comment']);
+                    hc['comment'].parentNode.removeChild(hc['comment']);
+                    delete hc['comment'];
+                    hc['comment'] = null;
+                }
+                else if (fnRes === false && !hc['comment']) {
+                    // real -> comment
+                    console.log(`if - real -> comment`);
+
+                    //
+                    hc['comment'] = window.document.createComment(`//hc:${self._id}:${self.createTagId()}`);
+                    el.parentNode.insertBefore(hc['comment'], el);
+                    el.parentNode.removeChild(el);
+                }
+            }
+            else if (hc['attr']['disabled']) {
+                const fnRes = calcRes(hc['attr']['disabled']);
+                //
+                (el as HTMLInputElement).disabled = fnRes;
+            }
+            else if (hc['attr']['html']) {
+                const fnRes = calcRes(hc['attr']['html']);
+                //
+                (el as Element).innerHTML = fnRes;
+            }
+            else if (hc['attr']['text']) {
+                const fnRes = calcRes(hc['attr']['text']);
+                //
+                (el as HTMLElement).innerText = fnRes;
+            }
+            else if (hc['attr']['value']) {
+                const fnRes = calcRes(hc['attr']['value']);
+                //
+                (el as HTMLInputElement).value = fnRes;
+            }
+            else if (hc['attr']['model']) {
+                const fnRes = calcRes(hc['attr']['model']);
+
+                //
+                if ((el as HTMLElement).tagName === 'INPUT' && self._toi_check.indexOf((el as HTMLInputElement).type) > -1) {
+                    let call_on_change = false;
+                    const group_name = (el as HTMLElement).hasAttribute('name') ? (el as HTMLElement).getAttribute('name') : null;
+                    console.log(`applyModel - input - group_name:${group_name}${group_name ? ` / model_groups.indexOf:${model_groups.indexOf(group_name)}` : ''}`);
+                    if (group_name) {
+                        //
+                        if (model_groups.indexOf(group_name) < 0) {
+                            model_groups.push(group_name);
+                            //
+                            const groups = self.el.querySelectorAll(`*[name=${group_name}]`);
+                            const changed = self.setCheckedValue(groups, fnRes);
+                            console.log(`applyModel - input - group_name:${group_name} - groups:${groups} / ${groups.length}`);
+                            console.log(`applyModel - input - group_name:${group_name} - changed:${changed}`);
+                            //
+                            call_on_change = hc['attr']['change'] && changed;
+                            console.log(`applyModel - input - group_name:${group_name} - call_on_change:${call_on_change}`);
+                        }
+                    }
+                    else {
+                        const prev: boolean = (el as HTMLInputElement).checked;
+                        console.log(`applyModel - input - prev:${prev}`);
+                        console.log(`applyModel - input - checked:${(el as HTMLInputElement).checked} / value - ${(el as HTMLInputElement).value} / ${fnRes}`);
+                        (el as HTMLInputElement).checked = (el as HTMLInputElement).value == fnRes;
+                        //
+                        call_on_change = (el as HTMLInputElement).checked != prev;
+                        console.log(`applyModel - input - call_on_change:${call_on_change}`);
+                    }
+                    //
+                    console.log(`applyModel - input - _hc:force_apply:${el['_hc:force_apply']}`);
+                    if (!call_on_change && el['_hc:force_apply']) {
+                        call_on_change = true;
+                        delete el['_hc:force_apply'];
+                    }
+                    //
+                    call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+                    // if (call_on_change) {
+                    //     call(hc['attr']['change']);
+                    // }
+                }
+                else if ((el as HTMLElement).tagName === 'SELECT' && self._toi_select.indexOf((el as HTMLInputElement).type) > -1) {
+                    let call_on_change = false;
+                    console.log(`applyModel - select`);
+                    const groups = (el as HTMLInputElement).querySelectorAll(`option`);
+                    const changed = self.setSelectedValue(groups, fnRes);
+                    console.log(`applyModel - select - groups:${groups} / ${groups.length}`);
+                    console.log(`applyModel - select - changed:${changed}`);
+                    //
+                    call_on_change = hc['attr']['change'] && changed;
+                    console.log(`applyModel - select - call_on_change:${call_on_change}`);
+                    //
+                    console.log(`applyModel - select - _hc:force_apply:${el['_hc:force_apply']}`);
+                    if (!call_on_change && el['_hc:force_apply']) {
+                        call_on_change = true;
+                        delete el['_hc:force_apply'];
+                    }
+                    //
+                    call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+                    // if (call_on_change) {
+                    //     call(hc['attr']['change']);
+                    // }
+                }
+                else if (['INPUT', 'TEXTAREA'].indexOf((el as HTMLElement).tagName) > -1 && self._toi_input.indexOf((el as HTMLInputElement).type) > -1) {
+                    let call_on_input = false;
+                    console.log(`applyModel - input2 - tagName:${(el as HTMLElement).tagName} - value = ${(el as HTMLInputElement).value} / ${fnRes}`);
+                    const changed = (el as HTMLInputElement).value != fnRes;
+                    console.log(`applyModel - input2 - tagName:${(el as HTMLElement).tagName} - changed:${changed}`);
+                    (el as HTMLInputElement).value = fnRes;
+                    //
+                    call_on_input = hc['attr']['input'] && changed;
+                    console.log(`applyModel - input2 - tagName:${(el as HTMLElement).tagName} - call_on_input:${call_on_input}`);
+                    //
+                    console.log(`applyModel - input2 - _hc:force_apply:${el['_hc:force_apply']}`);
+                    if (!call_on_input && el['_hc:force_apply']) {
+                        call_on_input = true;
+                        delete el['_hc:force_apply'];
+                    }
+                    //
+                    call_on_input && hc['attr']['input'] && call(hc['attr']['input']);
+                    // if (call_on_input) {
+                    //     call(hc['attr']['input']);
+                    // }
+                }
+            }
+        }
+    }
+
+    /**
+     * Array 값 수정이 발생한 경우 감지를 위한 이벤트 처리
+     * @param target 
+     */
+    private arrayEventListener(target: Array<any>): void {
+        //
+        const listen = this._traces.model.listen();
+
+        //
+        target.push = function(...args): number {
+            const rtn_val: number = Array.prototype.push.call(target, ...args);
+            listen();
+            return rtn_val;
+        },
+        target.pop = function(...args): any {
+            const rtn_val: any = Array.prototype.pop.call(target, ...args);
+            listen();
+            return rtn_val;
+        },
+        target.splice = function(...args): any[] {
+            const rtn_val: any[] = Array.prototype.splice.call(target, ...args);
+            listen();
+            return rtn_val;
+        },
+        target.shift = function(...args): any {
+            const rtn_val: any = Array.prototype.shift.call(target, ...args);
+            listen();
+            return rtn_val;
+        },
+        target.unshift = function(...args): number {
+            const rtn_val: number = Array.prototype.unshift.call(target, ...args);
+            listen();
+            return rtn_val;
+        }
+    }
+
+    private registEventListener(el: Element, name: string, attr: Attr, listener: EventListenerOrEventListenerObject = null): void {
+        const self: Hacci = this;
+        //
+        const call = function(evt: Event, val: string): any {
+            //
+            let exec = val;
+            if (val.indexOf('(') < 0) {
+                exec += '(_event)';
+            }
+            exec = exec.replace(/;$/, '');
+            //
+            const args = `try{ var _event=arguments[0]; } catch(e) { _event=arguments[0]; }\n`;
+            //
+            console.log(`registEventListener - call - exec:${exec}`);
+            const fn = new Function(`${self._txts_mstr}${args}return ${exec};`);
+            return fn.apply(self, [evt]);
+        }
+        //
         !listener &&
-            (listener = function(evt: Event) { self.callMethod({ attr, evt }) });
+            (listener = function(evt: Event) { call(evt, attr.value) });
         //
         el.addEventListener(name, listener);
         //
@@ -463,174 +633,58 @@ class Hacci {
         this._event_listeners = [];
     }
 
-    /**
-     * 대상 element의 change/input 등의 이벤트로 인한 변경시 연결된 model에 적용 처리
-     * @param el 
-     */
-    private modelTrigger(el: Element): void {
-        let target_attr = null;
-        let attrs = (el as HTMLInputElement)['attributes'];
-        for (let cnti: number = 0; cnti < attrs.length; cnti++) {
-            if (/^hc:model$/.test(attrs[cnti].name)) {
-                target_attr = attrs[cnti];
-                break;
-            }
-        }
-        if (target_attr) {
-            const model = this.getVal(target_attr.value, this);
-            //
-            const target_names = [];
-            //
-            const objs: NodeList = this.el.querySelectorAll('*');
-            //
-            for (let cnti = 0; cnti < objs.length; cnti++) {
-                const obj = objs[cnti] as HTMLInputElement;
-                //
-                attrs = obj['attributes'];
-                //
-                const evt = {
-                    change: {
-                        proc: false,
-                        attr: null,
-                    },
-                    input: {
-                        proc: false,
-                        attr: null,
-                    },
-                };
-                //
-                for (let cnti: number = 0; cnti < attrs.length; cnti++) {
-                    if (/^hc:change$/.test(attrs[cnti].name)) {
-                        evt.change.proc = true;
-                        evt.change.attr = attrs[cnti].value;
-                        break;
-                    }
-                }
-                //
-                for (let cnti: number = 0; cnti < attrs.length; cnti++) {
-                    if (/^hc:input$/.test(attrs[cnti].name)) {
-                        evt.input.proc = true;
-                        evt.input.attr = attrs[cnti].value;
-                        break;
-                    }
-                }
-                //
-                for (let cnti: number = 0; cnti < attrs.length; cnti++) {
-                    if (/^hc:model$/.test(attrs[cnti].name) && attrs[cnti].value === target_attr.value) {
-                        //
-                        if (obj.tagName === 'INPUT' && this._toi_check.indexOf(obj.type) > -1) {
-                            if (Array.isArray(model.val)) {
-                                obj.checked = model.val.indexOf(obj.value) > -1;
-                            }
-                            else {
-                                obj.checked = model.val == obj.value;
-                            }
-                            //
-                            const group_name = obj.hasAttribute('name') ? obj.getAttribute('name') : null;
-                            const target_added = target_names.indexOf(group_name) > -1;
-                            target_added && (evt.change.proc = false);
-                            if (!target_added) {
-                                target_names.push(group_name);
-                            }
-                            //
-                            evt.change.proc && this.callMethod({
-                                attr: {
-                                    value: evt.change.attr,
-                                },
-                                evt: null,
-                            })
-                        }
-                        else if (obj.tagName === 'SELECT' && this._toi_select.indexOf(obj.type) > -1) {
-                            const groups = obj.querySelectorAll(`option`);
-                            for (let cntk: number = 0; cntk < groups.length; cntk++) {
-                                if (Array.isArray(model.val)) {
-                                    (groups[cntk] as HTMLOptionElement).selected = model.val.indexOf((groups[cntk] as HTMLOptionElement).value) > -1;
-                                }
-                                else {
-                                    (groups[cntk] as HTMLOptionElement).selected = model.val == (groups[cntk] as HTMLOptionElement).value;
-                                }
-                            }
-                            //
-                            evt.change.proc && this.callMethod({
-                                attr: {
-                                    value: evt.change.attr,
-                                },
-                                evt: null,
-                            })
-                        }
-                        else if (['INPUT', 'TEXTAREA'].indexOf(obj.tagName) > -1 && this._toi_input.indexOf(obj.type) > -1) {
-                            obj.value = model.val;
-                            //
-                            evt.input.proc && this.callMethod({
-                                attr: {
-                                    value: evt.input.attr,
-                                },
-                                evt: null,
-                            })
-                        }
-                    }
-                    else if (/^hc:disabled$/.test(attrs[cnti].name) && attrs[cnti].value === target_attr.value) {
-                        obj.disabled = model.val;
-                    }
-                    else if (/^hc:(html|text)$/.test(attrs[cnti].name) && attrs[cnti].value === target_attr.value) {
-                        attrs[cnti].name === 'hc:html' ?
-                            (obj.innerHTML = model.val) :
-                            (obj.innerText = model.val);
-                    }
-                }
-            }
-            
-            // 모델 변경시 text 변경 처리용
-            this.applyTextChange();
-        }
+    private scrollHeight(el: Element): number {
+        return el.nodeType === 9 ?
+            Number(window.document.documentElement.scrollHeight) :
+            Number(el.scrollHeight);
+    }
+
+    private scrollTop(el: Element): number {
+        const rtn_val = el.nodeType === 9 ?
+            window.pageYOffset :
+            el.scrollTop;
+        return Math.ceil(rtn_val);
+    }
+
+    private innerHeight(el: any): number {
+        const rtn_val = el.nodeType === 9 ? 
+            Number(Math.max(
+                (el as Document).body.scrollHeight,
+                (el as Document).documentElement.scrollHeight,
+                (el as Document).body.offsetHeight,
+                (el as Document).documentElement.offsetHeight,
+                (el as Document).documentElement.clientHeight
+            )) :
+            Number((el as HTMLElement).clientHeight);
+        return Math.ceil(rtn_val);
     }
 
     /**
-     * hc:(change|event)에 지정된 method 호출 처리
-     * @param option 
+     * HTML 변경된 경우 이를 반영시키기 위해 기존 자료 삭제 및 초기화 처리
      */
-    private callMethod(option: any): void {
-        // console.log(`callMethod - option:${option.attr.name}`);
-        // const has_bracket = option.attr.value.includes('(');
-        const has_bracket = option.attr.value.indexOf('(') > -1;
+    public refresh(): void {
         //
-        const method_name = has_bracket ?
-            option.attr.value.replace(/\(.*/, '') :
-            option.attr.value;
+        this.clearData();
         //
-        if (has_bracket) {
-            // has arguments
-            // const args = option.attr.value.replace(/^\w*\(/, '').replace(/\)$/, '').split(',');
-            const args = option.attr.value.replace(/^\w*\(/, '').replace(/\)$/, '').split(/,(?=(?:(?:[^']*'){2})*[^']*$)/);
-            args.forEach((el, idx) => {
-                let new_el = el.replace(/^\s*/, '').replace(/\s*$/, '');
-                args[idx] = new_el === '_event' ? option.evt : eval(new_el);
-            });
-            //
-            // if (args.length < 2 && args[0] === '') args[0] = option.evt;
-            //
-            this[method_name](...args);
-        }
-        else {
-            // no arguments
-            this[method_name](option.evt);
-        }
+        // this.clearEventListeners();
+        //
+        this.init();
     }
 
-    // private commitEvent(element: HTMLElement, event_name: string) {
-    //     let event = null;
-    //     if(typeof(Event) === 'function') {
-    //         event = new Event(event_name);
-    //     }
-    //     else {
-    //         event = document.createEvent('Event');
-    //         event.initEvent(event_name, true, true);
-    //     }
-    //     console.log(`commitEvent - dispatchEvent - event:->`);
-    //     console.log(event);
-    //     //
-    //     element.dispatchEvent(event);
-    // }
+    /**
+     * model 정보 초기화
+     */
+    public clearData(): void {
+        //
+        const regx = new RegExp(/^__hc\.(v_.+|lstn$|refs$)/);
+        //
+        const keys = Object.keys(this);
+        for (let cnti: number = 0; cnti < keys.length; cnti++) {
+            if (regx.test(keys[cnti])) {
+                delete this[keys[cnti]];
+            }
+        }
+    }
     
     /**
      * 숫자/영문대소문자 조합의 랜덤문자열 생성
@@ -661,23 +715,6 @@ class Hacci {
     }
 
     /**
-     * tag_id로 특정된 comment element 반환
-     * @param parent 
-     * @param tag_id 
-     */
-    private getCommentElement(parent: Element, tag_id: string): Comment {
-        let rtn_val = null;
-        for (let cnti: number = 0; cnti < parent.childNodes.length; cnti++) {
-            const node = parent.childNodes[cnti];
-            if (node.nodeType === Node.COMMENT_NODE && node.textContent == `//hc:${this._id}:${tag_id}`) {
-                rtn_val = node;
-                break;
-            }
-        }
-        return rtn_val;
-    }
-
-    /**
      * arrow function 여부 반환
      * @param func 
      */
@@ -702,6 +739,7 @@ class Hacci {
         }
         return func;
     }
+    
 
     /**
      * radio/checkbox element에 대해 현재 checked된 값 반환
@@ -779,10 +817,11 @@ class Hacci {
                 (rtn_val = true);
 
             //
+            console.log(`setCheckedValue.proc - item.value:${item.value} / item.checked:${item.checked} / value:${JSON.stringify(value)} / rtn_val:${rtn_val}`);
             if (rtn_val) break;
         }
-        !has_checked && !rtn_val && (rtn_val = true);
-        // console.log(`setCheckedValue.proc - has_checked:${has_checked} / rtn_val:${rtn_val}`);
+        // !has_checked && !rtn_val && (rtn_val = true);
+        console.log(`setCheckedValue.proc - has_checked:${has_checked} / rtn_val:${rtn_val}`);
         //
         for (let cntk: number = 0; cntk < groups.length; cntk++) {
             const item: HTMLInputElement = groups[cntk] as HTMLInputElement;
@@ -828,9 +867,11 @@ class Hacci {
                 (rtn_val = true);
 
             //
+            console.log(`setSelectedValue.proc - item.value:${item.value} / item.selected:${item.selected} / value:${JSON.stringify(value)} / rtn_val:${rtn_val}`);
             if (rtn_val) break;
         }
-        !has_selected && !rtn_val && (rtn_val = true);
+        // !has_selected && !rtn_val && (rtn_val = true);
+        console.log(`setSelectedValue.proc - has_selected:${has_selected} / rtn_val:${rtn_val}`);
         //
         for (let cntk: number = 0; cntk < groups.length; cntk++) {
             const item: HTMLOptionElement = groups[cntk] as HTMLOptionElement;
@@ -841,338 +882,6 @@ class Hacci {
         }
         //
         return rtn_val;
-    }
-
-    /**
-     * model값 반환
-     * @param val 
-     * @param init_parent 
-     * @param prefix 
-     */
-    private getVal(val: any, init_parent: any, prefix: string = ''): any {
-        //
-        if ((new RegExp(/^(true|false|'.+'|\d+)$/)).test(val)) {
-            return {
-                parent: null,
-                prop: null,
-                val: eval(val),
-            };
-        }
-        //
-        let rtn_val = {
-            parent: null,
-            prop: null,
-            val: init_parent,
-        };
-        //
-        const strs: string[] = val.split('.');
-        for (let cnti: number = 0; cnti < strs.length; cnti++) {
-            if (cnti === 0) {
-                rtn_val.parent = rtn_val.val;
-                rtn_val.prop = prefix + strs[0];
-                rtn_val.val = rtn_val.val[prefix + strs[0]];
-                continue;
-            }
-            //
-            rtn_val.parent = rtn_val.val;
-            rtn_val.prop = prefix + strs[cnti];
-            rtn_val.val = rtn_val.val[prefix + strs[cnti]];
-        }
-        //
-        return rtn_val;
-    }
-
-    /**
-     * model 값 설정
-     * @param target 
-     * @param val 
-     * @param init_parent 
-     */
-    private setVal(target: any, val: any, init_parent: any): void {
-        let parent = init_parent;
-        //
-        const strs: string[] = target.split('.');
-        for (let cnti: number = 0; cnti < strs.length; cnti++) {
-            if (typeof parent[`__${strs[cnti]}`] === 'undefined') {
-                parent[`__${strs[cnti]}`] = {};
-            }
-            if (cnti >= strs.length - 1) {
-                parent[`__${strs[cnti]}`] = val;
-            }
-            else {
-                parent = parent[`__${strs[cnti]}`];
-            }
-        }
-    }
-
-    /**
-     * Array 값 수정이 발생한 경우 감지를 위한 이벤트 처리
-     * @param prop 
-     * @param target 
-     */
-    private arrayEventListener(prop: string, target: Array<any>): void {
-        //
-        const traces = this._traces.model;
-
-        //
-        target.push = function(...args): number {
-            const rtn_val: number = Array.prototype.push.call(target, ...args);
-            traces.__listen(prop, target);
-            return rtn_val;
-        },
-        target.pop = function(...args): any {
-            const rtn_val: any = Array.prototype.pop.call(target, ...args);
-            traces.__listen(prop, target);
-            return rtn_val;
-        },
-        target.splice = function(...args): any[] {
-            const rtn_val: any[] = Array.prototype.splice.call(target, ...args);
-            traces.__listen(prop, target);
-            return rtn_val;
-        },
-        target.shift = function(...args): any {
-            const rtn_val: any = Array.prototype.shift.call(target, ...args);
-            traces.__listen(prop, target);
-            return rtn_val;
-        },
-        target.unshift = function(...args): number {
-            const rtn_val: number = Array.prototype.unshift.call(target, ...args);
-            traces.__listen(prop, target);
-            return rtn_val;
-        }
-    }
-
-    private traceModel(option: HacciTraceModelOption): void {
-        //
-        if ((new RegExp(/^(true|false|'.+'|\d+)$/)).test(option.property)) return;
-        //
-        const self: Hacci = this;
-        // parent 확인 및 지정
-        (['undefined', 'null'].indexOf(typeof option.parent) > -1) && 
-            (option.parent = this);
-
-        // console.log(`traceModel - option:${JSON.stringify(option)}`);
-        //
-        !this._traces.model['__listen'] && 
-            (
-                this._traces.model['__listen'] = function(property: string, value: any) {
-                    // console.log(`traceModel - listen - property:${property} / value:${value}`);
-                    //
-                    if (self._objs[property] && Array.isArray(self._objs[property])) {
-                        for (let cnti: number = 0; cnti < self._objs[property].length; cnti++) {
-                            const el = self._objs[property][cnti];
-                            if (el.type === 'if') {
-                                const commentEl = self.getCommentElement(el.parent, el.tag_id);
-                                if (commentEl) {
-                                    commentEl.parentNode.insertBefore(el.element, commentEl);
-                                    commentEl.parentNode.removeChild(commentEl);
-                                    //
-                                    self._objs[property].splice(cnti, 1);
-                                    cnti--;
-                                    //
-                                    if (self._objs[property].length < 1) {
-                                        delete self._objs[property];
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    //
-                    const target_names = [];
-                    //
-                    const objs: NodeList = self.el.querySelectorAll('*');
-                    for (let cnti = 0; cnti < objs.length; cnti++) {
-                        const obj = objs[cnti] as HTMLInputElement;
-                        //
-                        const attrs = obj['attributes'];
-                        //
-                        const evt = {
-                            change: {
-                                proc: false,
-                                attr: null,
-                            },
-                            input: {
-                                proc: false,
-                                attr: null,
-                            },
-                        };
-                        //
-                        for (let cntk: number = 0; cntk < attrs.length; cntk++) {
-                            if (/^hc:change$/.test(attrs[cntk].name)) {
-                                evt.change.proc = true;
-                                evt.change.attr = attrs[cntk].value;
-                                break;
-                            }
-                        }
-                        //
-                        for (let cntk: number = 0; cntk < attrs.length; cntk++) {
-                            if (/^hc:input$/.test(attrs[cntk].name)) {
-                                evt.input.proc = true;
-                                evt.input.attr = attrs[cntk].value;
-                                break;
-                            }
-                        }
-                        // console.log(`traceModel - listen - evt:${JSON.stringify(evt)}`);
-                        //
-                        for (let cntk: number = 0; cntk < attrs.length; cntk++) {
-                            if (/^hc:(if|neither)$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
-                                if (
-                                    /^hc:if$/.test(attrs[cntk].name) && value === false ||
-                                    /^hc:neither$/.test(attrs[cntk].name) && value === true
-                                ) {
-                                    //
-                                    const tag_id = self.createTagId();
-                                    const blankEl = window.document.createComment(`//hc:${self._id}:${tag_id}`);
-                                    obj.parentNode.insertBefore(blankEl, obj);
-                                    //
-                                    !self._objs[property] && (self._objs[property] = []);
-                                    self._objs[property].push({
-                                        type: 'if',
-                                        tag_id,
-                                        parent: obj.parentElement,
-                                        element: obj,
-                                    });
-                                    obj.parentNode.removeChild(obj);
-                                }
-                            }
-                            else if (/^hc:disabled$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
-                                // obj.disabled = option.parent[option.property];
-                                obj.disabled = self.getVal(property, self).val;
-                            }
-                            else if (/^hc:html$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
-                                // obj.innerHTML = option.parent[option.property];
-                                obj.innerHTML = self.getVal(property, self).val;
-                            }
-                            else if (/^hc:text$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
-                                // obj.innerText = option.parent[option.property];
-                                obj.innerText = self.getVal(property, self).val;
-                            }
-                            else if (/^hc:model$/.test(attrs[cntk].name) && attrs[cntk].value === property) {
-                                //
-                                if (obj.tagName === 'INPUT' && self._toi_check.indexOf(obj.type) > -1) {
-                                    const group_name = obj.hasAttribute('name') ? obj.getAttribute('name') : null;
-                                    // const target_added = target_names.indexOf(group_name) > -1;
-                                    if (group_name) {
-                                        const groups = self.el.querySelectorAll(`*[name=${group_name}]`);
-                                        const changed = self.setCheckedValue(groups, value);
-                                        //
-                                        evt.change.proc = evt.change.proc && changed;
-                                        //
-                                        const target_added = target_names.indexOf(group_name) > -1;
-                                        target_added && (evt.change.proc = false);
-                                        if (!target_added) {
-                                            target_names.push(group_name);
-                                        }
-                                    }
-                                    else {
-                                        obj.checked = obj.value == value;
-                                    }
-                                    //
-                                    // if (!target_added) {
-                                    //     target_names.push(group_name);
-                                    //     commit_events.change.indexOf(obj) < 0 && commit_events.change.push(obj);
-                                    // }
-                                    //
-                                    evt.change.proc && self.callMethod({
-                                        attr: {
-                                            value: evt.change.attr,
-                                        },
-                                        evt: null,
-                                    })
-                                }
-                                else if (obj.tagName === 'SELECT' && self._toi_select.indexOf(obj.type) > -1) {
-                                    const groups = obj.querySelectorAll(`option`);
-                                    const changed = self.setSelectedValue(groups, value);
-                                    //
-                                    evt.change.proc = evt.change.proc && changed;
-                                    //
-                                    // commit_events.change.indexOf(obj) < 0 && commit_events.change.push(obj);
-                                    //
-                                    evt.change.proc && self.callMethod({
-                                        attr: {
-                                            value: evt.change.attr,
-                                        },
-                                        evt: null,
-                                    })
-                                }
-                                else if (['INPUT', 'TEXTAREA'].indexOf(obj.tagName) > -1 && self._toi_input.indexOf(obj.type) > -1) {
-                                    //
-                                    const changed = obj.value != value;
-                                    //
-                                    evt.input.proc = evt.input.proc && changed;
-                                    //
-                                    obj.value = value;
-                                    //
-                                    // commit_events.input.indexOf(obj) < 0 && commit_events.input.push(obj);
-                                    //
-                                    evt.input.proc && self.callMethod({
-                                        attr: {
-                                            value: evt.input.attr,
-                                        },
-                                        evt: null,
-                                    })
-                                }
-                            }
-                        }
-                    }
-                }
-            );
-        const traces = this._traces.model;
-        const model = this.getVal(option.property, this);
-        this.setVal(option.property, model.val, traces);
-        const traceModel = this.getVal(option.property, traces, '__');
-
-        //
-        Array.isArray(model.parent[model.prop]) && this.arrayEventListener(option.property, model.parent[model.prop]);
-
-        //
-        model.parent && model.prop &&
-            Object.defineProperty(
-                model.parent,
-                model.prop,
-                {
-                    get: function() {
-                        const rtn_val = self.getVal(option.property, traces, '__').val;
-                        return rtn_val
-                    },
-                    set: function(value: any) {
-                        // console.log(`traceModel - set - property:${`__${model.prop}`} / value:${value}`);
-                        traceModel.parent[`__${model.prop}`] = value;
-                        Array.isArray(value) && self.arrayEventListener(option.property, value);
-                        traces.__listen(option.property, value);
-
-                        // 모델 변경시 text 변경 처리용
-                        self.applyTextChange();
-                    }
-                }
-            );
-    }
-
-    private scrollHeight(el: Element): number {
-        return el.nodeType === 9 ?
-            Number(window.document.documentElement.scrollHeight) :
-            Number(el.scrollHeight);
-    }
-
-    private scrollTop(el: Element): number {
-        const rtn_val = el.nodeType === 9 ?
-            window.pageYOffset :
-            el.scrollTop;
-        return Math.ceil(rtn_val);
-    }
-
-    private innerHeight(el: any): number {
-        const rtn_val = el.nodeType === 9 ? 
-            Number(Math.max(
-                (el as Document).body.scrollHeight,
-                (el as Document).documentElement.scrollHeight,
-                (el as Document).body.offsetHeight,
-                (el as Document).documentElement.offsetHeight,
-                (el as Document).documentElement.clientHeight
-            )) :
-            Number((el as HTMLElement).clientHeight);
-        return Math.ceil(rtn_val);
     }
 
     /**
@@ -1227,28 +936,28 @@ class Hacci {
      * Hacci 객체 삭제
      */
     public destroy() {
-        //
-        this.clearEventListeners();
-        // initialize
-        this._refs = {};
-        //
-        this._template && this.el.parentElement.removeChild(this.el);
-        this._template = null;
-        //
-        this._el = null;
-        //
-        this._on && this._on.destroyed && this._on.destroyed();
-        //
-        this._on = {
-            created: null,
-            mounted: null,
-            destroyed: null,
-        };
-        //
-        if (Hacci.instances[this._id]) {
-            Hacci.instances[this._id] = null;
-            delete Hacci.instances[this._id];
-        }
+        // //
+        // this.clearEventListeners();
+        // // initialize
+        // this._refs = {};
+        // //
+        // this._template && this.el.parentElement.removeChild(this.el);
+        // this._template = null;
+        // //
+        // this._el = null;
+        // //
+        // this._on && this._on.destroyed && this._on.destroyed();
+        // //
+        // this._on = {
+        //     created: null,
+        //     mounted: null,
+        //     destroyed: null,
+        // };
+        // //
+        // if (Hacci.instances[this._id]) {
+        //     Hacci.instances[this._id] = null;
+        //     delete Hacci.instances[this._id];
+        // }
     }
 
     /**
@@ -1271,75 +980,6 @@ class Hacci {
     public get refs(): any {
         return this._refs;
     }
-
-    // private redefineModel(data: any, parent: any = null, model: any = null): void {
-    //     //
-    //     if (['null', 'undefined'].indexOf(typeof(model)) > -1) {
-    //         !this['_models'] && (this['_models'] = {});
-    //         model = this['_models'];
-    //     }
-    //     // copy
-    //     const keys: string[] = Object.keys(data);
-    //     for (let cnti: number = 0; cnti < keys.length; cnti++) {
-    //         const key: string = keys[cnti];
-    //         const val: any = data[key];
-    //         //
-    //         if (['null', 'undefined'].indexOf(typeof(model[key])) > -1) {
-    //             model[key] = val;
-    //         }
-    //         //
-    //         // !(data[keys[cnti]] instanceof Object) -> number, string typeof
-    //         // (data[keys[cnti]] instanceof Object) -> object typeof
-    //         // (data[keys[cnti]] instanceof Array) -> object typeof
-    //         if (
-    //             !(val instanceof Object) && ['number', 'string'].indexOf(typeof(val)) > -1 ||
-    //             (val instanceof Object) && ['object'].indexOf(typeof(val)) > -1 ||
-    //             (val instanceof Array) && ['object'].indexOf(typeof(val)) > -1
-    //         ) {
-    //             //
-    //             Object.defineProperty(
-    //                 data,
-    //                 key,
-    //                 {
-    //                     get: function() {
-    //                         return model[key];
-    //                     },
-    //                     set: function(value: any) {
-    //                         model[key] = value;
-    //                     }
-    //                 }
-    //             );
-
-    //             //
-    //             (val instanceof Object) &&
-    //                 ['object'].indexOf(typeof(val)) > -1 &&
-    //                 this.redefineModel(val, data, model[key]);
-    //         }
-    //     }
-    // }
-
-    // /**
-    //  * model의 모든 값에 대해 redefine 처리
-    //  */
-    // private setModels(data: any): void {
-    //     // prepare model object
-    //     !this['_models'] && (this['_models'] = {});
-    //     //
-    //     this.redefineModel(data, this['_models']);
-    // }
-
-    // private detector(key: string): void {
-    //     /**
-    //      * _models = {
-    //      *   {name}: {
-    //      *     v: {object},
-    //      *     refs: [
-    //      *     ],
-    //      *   }
-    //      * }
-    //      */
-
-    // }
 }
 
 window['Hacci'] = Hacci;
