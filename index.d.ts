@@ -31,6 +31,9 @@ declare class Hacci {
     private arrayEventListener;
     private registEventListener;
     private clearEventListeners;
+    private searchTextNodes;
+    private applyTextChange;
+    private compileText;
     private scrollHeight;
     private scrollTop;
     private innerHeight;

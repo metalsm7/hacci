@@ -13,9 +13,9 @@ app.use(serve(`${__dirname}/public`));
 
 // view
 const render = Views(`${__dirname}/views`, {
-    map: {
+    /*map: {
         html: 'mustache'
-    }
+    }*/
 });
 app.use(render);
 
