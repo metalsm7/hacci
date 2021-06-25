@@ -13,6 +13,7 @@ var Hacci = (function () {
             },
             elements: [],
             txts: [],
+            fors: [],
         };
         this._txts_mstr = null;
         this._event_listeners = [];
@@ -124,28 +125,54 @@ var Hacci = (function () {
             }
         });
         observer.observe(this.el.parentElement, { attributes: false, childList: true, subtree: false });
-        this.searchTextNodes();
         var els = this.el.querySelectorAll('*');
+        for (var cnti = 0; cnti < els.length; cnti++) {
+            var obj = els.item(cnti);
+            var attrs = obj.attributes;
+            for (var cntk = 0; cntk < attrs.length; cntk++) {
+                var attr = attrs.item(cntk);
+                if ((/^hc:for$/).test(attr.name)) {
+                    self._traces.fors.indexOf(obj) < 0 &&
+                        self._traces.fors.push(obj);
+                    var forComment = window.document.createComment("//hc-for:" + self._id + ":" + self.createTagId());
+                    obj.parentNode.insertBefore(forComment, obj);
+                    obj.parentNode.removeChild(obj);
+                    !obj['_hc'] && (obj['_hc'] = {
+                        attr: {},
+                        comment: null,
+                        for: null,
+                    });
+                    obj['_hc'].attr['for'] = attr.value;
+                    obj['_hc'].for = forComment;
+                    console.log("for - outerHTML:" + obj.outerHTML);
+                }
+            }
+        }
+        this.searchTextNodes();
+        els = this.el.querySelectorAll('*');
         var _loop_1 = function (cnti) {
             var obj = els.item(cnti);
             var attrs = obj.attributes;
-            var _loop_2 = function (cnti_1) {
-                var attr = attrs.item(cnti_1);
+            var _loop_2 = function (cntk) {
+                var attr = attrs.item(cntk);
                 if ((/^hc:.+$/).test(attr.name)) {
                     var hc_attr = attr.name.substring(3);
+                    if (hc_attr === 'for')
+                        return out_cntk_1 = cntk, "continue";
                     if (hc_attr == 'ref') {
                         self._refs[attr.value] = obj;
                         if (obj.hasAttribute(attr.name)) {
                             obj.removeAttribute(attr.name);
-                            --cnti_1;
+                            --cntk;
                         }
-                        return out_cnti_1 = cnti_1, "continue";
+                        return out_cntk_1 = cntk, "continue";
                     }
                     self._traces.elements.indexOf(obj) < 0 &&
                         self._traces.elements.push(obj);
                     !obj['_hc'] && (obj['_hc'] = {
                         attr: {},
                         comment: null,
+                        for: null,
                     });
                     if (hc_attr === 'neither') {
                         obj['_hc'].attr['if'] = "!(" + attr.value + ")";
@@ -207,15 +234,15 @@ var Hacci = (function () {
                     }
                     if (obj.hasAttribute(attr.name)) {
                         obj.removeAttribute(attr.name);
-                        --cnti_1;
+                        --cntk;
                     }
                 }
-                out_cnti_1 = cnti_1;
+                out_cntk_1 = cntk;
             };
-            var out_cnti_1;
-            for (var cnti_1 = 0; cnti_1 < attrs.length; cnti_1++) {
-                _loop_2(cnti_1);
-                cnti_1 = out_cnti_1;
+            var out_cntk_1;
+            for (var cntk = 0; cntk < attrs.length; cntk++) {
+                _loop_2(cntk);
+                cntk = out_cntk_1;
             }
         };
         for (var cnti = 0; cnti < els.length; cnti++) {
@@ -223,6 +250,7 @@ var Hacci = (function () {
         }
         ;
         this.applyModel();
+        this.applyFor();
         this._on && this._on.mounted && this._on.mounted();
     };
     Hacci.prototype.redefineModel = function (prop, parent, prev_model_prop) {
@@ -258,6 +286,15 @@ var Hacci = (function () {
                 var key = keys[cnti];
                 this.redefineModel(key, val, model_prop);
             }
+        }
+    };
+    Hacci.prototype.applyFor = function () {
+        var self = this;
+        for (var cnti = 0; cnti < self._traces.fors.length; cnti++) {
+            var el = self._traces.fors[cnti];
+            var hc = el['_hc'];
+            var html = el.outerHTML;
+            console.log("applyFor - html:" + html);
         }
     };
     Hacci.prototype.applyModel = function () {

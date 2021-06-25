@@ -49,6 +49,41 @@
         </table>
         <hr />
 
+        <h2>For</h2>
+
+        <div>
+            <div id="app_for_ex1">
+                <h3>For</h4>
+                <div class="example">
+                    <table>
+                        <tr hc:for="data in list">
+                            <td hc:text="data.id"></td>
+                            <td>{{ data.pwd }}</td>
+                            <td hc:html="data.name"></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <script type="text/javascript">
+            new Hacci({
+                id: 'for',
+                el: document.querySelector('#app_for_ex1'),
+                data: {
+                    list: [
+                        { id: 'id1', pwd: 'pwd1', name: '<p color="red">name1</p>', }, 
+                        { id: 'id2', pwd: 'pwd2', name: '<p color="green">name2</p>', }, 
+                        { id: 'id3', pwd: 'pwd3', name: '<p color="tellow">name3</p>', }, 
+                        { id: 'id4', pwd: 'pwd4', name: '<p color="blue">name4</p>', }, 
+                    ],
+                },
+                method: {
+                },
+                mounted: function() {
+                }
+            }).mount();
+            </script>
+        </div>
+
         <h2>Model</h2>
 
         <div>

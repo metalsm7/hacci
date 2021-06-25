@@ -35,6 +35,7 @@ class Hacci {
         },
         elements: [],
         txts: [],
+        fors: [], // hc:for 자료 저장용
     };
     private _txts_mstr = null;
     private _event_listeners = [];
@@ -185,15 +186,56 @@ class Hacci {
         observer.observe(this.el.parentElement, { attributes: false, childList: true, subtree: false });
 
         //
-        this.searchTextNodes();
+        let els: NodeList = this.el.querySelectorAll('*');
+
         //
-        const els: NodeList = this.el.querySelectorAll('*');
         for (let cnti: number = 0; cnti < els.length; cnti++) {
             const obj: Node = els.item(cnti);
             //
             const attrs: NamedNodeMap = (obj as HTMLElement).attributes;
-            for (let cnti: number = 0; cnti < attrs.length; cnti++) {
-                const attr: Attr = attrs.item(cnti);
+
+            // for 우선 처리, (row.a, row.b, index) in rows, row in rows
+            for (let cntk: number = 0; cntk < attrs.length; cntk++) {
+                const attr: Attr = attrs.item(cntk);
+                if ((/^hc:for$/).test(attr.name)) {
+                    //
+                    self._traces.fors.indexOf(obj) < 0 &&
+                        self._traces.fors.push(obj);
+                    //
+                    const forComment = window.document.createComment(`//hc-for:${self._id}:${self.createTagId()}`);
+                    obj.parentNode.insertBefore(forComment, obj);
+                    obj.parentNode.removeChild(obj);
+                    //
+                    !obj['_hc']&& (
+                        obj['_hc'] = {
+                            attr: {},
+                            comment: null,
+                            for: null,
+                        }
+                    );
+                    //
+                    obj['_hc'].attr['for'] = attr.value;
+                    obj['_hc'].for = forComment;
+                    console.log(`for - outerHTML:${(obj as HTMLElement).outerHTML}`);
+                }
+            }
+        }
+
+        //
+        this.searchTextNodes();
+
+        //
+        els = this.el.querySelectorAll('*');
+
+        //
+        for (let cnti: number = 0; cnti < els.length; cnti++) {
+            const obj: Node = els.item(cnti);
+            //
+            const attrs: NamedNodeMap = (obj as HTMLElement).attributes;
+
+            // 나머지 처리
+            for (let cntk: number = 0; cntk < attrs.length; cntk++) {
+                const attr: Attr = attrs.item(cntk);
                 if ((/^hc:.+$/).test(attr.name)) {
                     const hc_attr: string = attr.name.substring(3);
                     // console.log(`hc:${hc_attr}`);
@@ -203,13 +245,15 @@ class Hacci {
                     // //
                     // self._traces.element[hc_attr].push(obj);
 
+                    if (hc_attr === 'for') continue;
+
                     //
                     if (hc_attr == 'ref') {
                         self._refs[attr.value] = obj;
                         //
                         if ((obj as HTMLElement).hasAttribute(attr.name)) {
                             (obj as HTMLElement).removeAttribute(attr.name);
-                            --cnti;
+                            --cntk;
                         }
                         //
                         continue;
@@ -223,6 +267,7 @@ class Hacci {
                         obj['_hc'] = {
                             attr: {},
                             comment: null,
+                            for: null,
                         }
                     );
                     //
@@ -332,7 +377,7 @@ class Hacci {
                     //
                     if ((obj as HTMLElement).hasAttribute(attr.name)) {
                         (obj as HTMLElement).removeAttribute(attr.name);
-                        --cnti;
+                        --cntk;
                     }
                 }
             }
@@ -340,6 +385,7 @@ class Hacci {
 
         //
         this.applyModel();
+        // this.applyFor();
         //
         this._on && this._on.mounted && this._on.mounted();
     }
@@ -404,7 +450,33 @@ class Hacci {
             }
         }
     }
+
+    //
+    private applyFor(): void {
+        //
+        const self: Hacci = this;
+        //
+        for (let cnti: number = 0; cnti < self._traces.fors.length; cnti++) {
+            //
+            const el: Node = self._traces.fors[cnti];
+            const hc = el['_hc'];
+            //
+            const model_str = String(hc.attr.for).replace(/(\(.*\)|.+)\s+(in)\s+/g, '').replace(/\s/g, '');
+            const data_str = String(hc.attr.for).replace(/\s+in\s+.*$/, '').replace(/\s/g, '');
+            //
+            if (data_str.charAt(0) === '(') {
+                // (id, pwd, index) in rows 같이 정의된 경우 (괄호로 시작하는 경우)
+            }
+            else {
+                // row in rows 같이 정의된 경우
+            }
+            //
+            const html = (el as HTMLElement).outerHTML;
+            console.log(`applyFor - html:${html}`);
+        }
+    }
     
+    //
     private applyModel(): void {
         //
         const self: Hacci = this;

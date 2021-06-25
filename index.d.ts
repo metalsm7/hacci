@@ -27,6 +27,7 @@ declare class Hacci {
     constructor(option?: HacciOption | null);
     private init;
     private redefineModel;
+    private applyFor;
     private applyModel;
     private arrayEventListener;
     private registEventListener;
