@@ -190,10 +190,6 @@ var Hacci = (function () {
                             });
                     }
                     switch (hc_attr) {
-                        case 'click':
-                        case 'scroll':
-                            self.registEventListener(obj, hc_attr, attr);
-                            break;
                         case 'scroll.hit.top':
                         case 'scroll.hit.bottom':
                             self.registEventListener(obj, 'scroll', attr, function (evt) {
@@ -203,6 +199,10 @@ var Hacci = (function () {
                                     call(attr.value);
                                 }
                             });
+                            break;
+                        default:
+                            typeof (window["on" + hc_attr]) !== 'undefined' &&
+                                self.registEventListener(obj, hc_attr, attr);
                             break;
                     }
                     if (obj.hasAttribute(attr.name)) {
@@ -677,6 +677,21 @@ var Hacci = (function () {
         return rtn_val;
     };
     Hacci.prototype.destroy = function () {
+        this.clearEventListeners();
+        this._refs = {};
+        this._template && this.el.parentElement.removeChild(this.el);
+        this._template = null;
+        this._el = null;
+        this._on && this._on.destroyed && this._on.destroyed();
+        this._on = {
+            created: null,
+            mounted: null,
+            destroyed: null,
+        };
+        if (Hacci.instances[this._id]) {
+            Hacci.instances[this._id] = null;
+            delete Hacci.instances[this._id];
+        }
     };
     Hacci.prototype.mount = function (el) {
         el && (this._el = el);

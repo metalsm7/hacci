@@ -306,10 +306,6 @@ class Hacci {
                     }
                     //
                     switch (hc_attr) {
-                        case 'click':
-                        case 'scroll':
-                            self.registEventListener((obj as HTMLInputElement), hc_attr, attr);
-                            break;
                         case 'scroll.hit.top':
                         case 'scroll.hit.bottom':
                             self.registEventListener(
@@ -326,6 +322,10 @@ class Hacci {
                                     }
                                 }
                             );
+                            break;
+                        default:
+                            typeof(window[`on${hc_attr}`]) !== 'undefined' &&
+                                self.registEventListener((obj as HTMLInputElement), hc_attr, attr);
                             break;
                     }
 
@@ -1035,28 +1035,28 @@ class Hacci {
      * Hacci 객체 삭제
      */
     public destroy() {
-        // //
-        // this.clearEventListeners();
-        // // initialize
-        // this._refs = {};
-        // //
-        // this._template && this.el.parentElement.removeChild(this.el);
-        // this._template = null;
-        // //
-        // this._el = null;
-        // //
-        // this._on && this._on.destroyed && this._on.destroyed();
-        // //
-        // this._on = {
-        //     created: null,
-        //     mounted: null,
-        //     destroyed: null,
-        // };
-        // //
-        // if (Hacci.instances[this._id]) {
-        //     Hacci.instances[this._id] = null;
-        //     delete Hacci.instances[this._id];
-        // }
+        //
+        this.clearEventListeners();
+        // initialize
+        this._refs = {};
+        //
+        this._template && this.el.parentElement.removeChild(this.el);
+        this._template = null;
+        //
+        this._el = null;
+        //
+        this._on && this._on.destroyed && this._on.destroyed();
+        //
+        this._on = {
+            created: null,
+            mounted: null,
+            destroyed: null,
+        };
+        //
+        if (Hacci.instances[this._id]) {
+            Hacci.instances[this._id] = null;
+            delete Hacci.instances[this._id];
+        }
     }
 
     /**
