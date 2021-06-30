@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Hacci = (function () {
     function Hacci(option) {
         if (option === void 0) { option = null; }
+        var _this = this;
         this._id = null;
         this._el = null;
         this._refs = {};
@@ -70,6 +71,21 @@ var Hacci = (function () {
         option.mounted && (this._on.mounted = this.fromArrowFunc(option.mounted).bind(this));
         option.destroyed && (this._on.destroyed = this.fromArrowFunc(option.destroyed).bind(this));
         this._template && (this.el.innerHTML = this._template);
+        var observer = new MutationObserver(function (mutationsList, observer) {
+            for (var _i = 0, mutationsList_1 = mutationsList; _i < mutationsList_1.length; _i++) {
+                var mutation = mutationsList_1[_i];
+                if (mutation.type === 'childList') {
+                    var nodes = mutation.removedNodes;
+                    var content_removed = nodes && nodes.length > 0 && (nodes[0] === _this.el);
+                    if (content_removed) {
+                        observer.disconnect();
+                        _this.clearEventListeners();
+                        _this.destroy();
+                    }
+                }
+            }
+        });
+        observer.observe(this.el.parentElement, { attributes: false, childList: true, subtree: false });
         this._on && this._on.created && this._on.created();
     }
     Object.defineProperty(Hacci, "instances", {
@@ -80,7 +96,6 @@ var Hacci = (function () {
         configurable: true
     });
     Hacci.prototype.init = function () {
-        var _this = this;
         var self = this;
         if (!self._txts_mstr) {
             self._txts_mstr = '';
@@ -91,8 +106,52 @@ var Hacci = (function () {
                 self._txts_mstr += "var " + keys[cnti] + "=this." + keys[cnti] + ";\n";
             }
         }
-        var calcRes = function (val) {
-            var fn = new Function(self._txts_mstr + "return " + val + ";");
+        this.searchNodes(self.el);
+        this.searchTextNodes(self.el);
+        this.applyModel();
+        this._on && this._on.mounted && this._on.mounted();
+    };
+    Hacci.prototype.procForNodes = function (el) {
+        var self = this;
+        var els = el.querySelectorAll('*');
+        for (var cnti = 0; cnti < els.length; cnti++) {
+            var obj = els.item(cnti);
+            var attrs = obj.attributes;
+            for (var cntk = 0; cntk < attrs.length; cntk++) {
+                var attr = attrs.item(cntk);
+                if ((/^hc:for$/).test(attr.name)) {
+                    self._traces.fors.indexOf(obj) < 0 &&
+                        self._traces.fors.push(obj);
+                    var forComment = window.document.createComment("//hc-for:" + self._id + ":" + self.createTagId());
+                    obj.parentNode.insertBefore(forComment, obj);
+                    obj.parentNode.removeChild(obj);
+                    !obj['_hc'] && (obj['_hc'] = {
+                        attr: {},
+                        comment: null,
+                        for_comment: null,
+                        for_elements: [],
+                        for_txts: [],
+                        model_str: null,
+                    });
+                    obj['_hc'].attr['for'] = attr.value;
+                    obj['_hc'].for_comment = forComment;
+                    console.log("for - outerHTML:" + obj.outerHTML);
+                }
+            }
+        }
+        self.applyFor();
+    };
+    Hacci.prototype.searchNodes = function (el) {
+        var self = this;
+        self.procForNodes(el);
+        self.procNode(el.querySelectorAll('*'), el);
+    };
+    Hacci.prototype.procNode = function (node, root) {
+        if (root === void 0) { root = null; }
+        var self = this;
+        var calcRes = function (val, model_str) {
+            if (model_str === void 0) { model_str = null; }
+            var fn = new Function("" + self._txts_mstr + (model_str ? model_str : '') + "return " + val + ";");
             var fnRes = fn.apply(self);
             typeof (fnRes) === 'function' && (fnRes = fnRes());
             return fnRes;
@@ -110,148 +169,115 @@ var Hacci = (function () {
             var fn = new Function(self._txts_mstr + "return " + exec + ";");
             return fn.apply(self);
         };
-        var observer = new MutationObserver(function (mutationsList, observer) {
-            for (var _i = 0, mutationsList_1 = mutationsList; _i < mutationsList_1.length; _i++) {
-                var mutation = mutationsList_1[_i];
-                if (mutation.type === 'childList') {
-                    var nodes = mutation.removedNodes;
-                    var content_removed = nodes && nodes.length > 0 && (nodes[0] === _this.el);
-                    if (content_removed) {
-                        observer.disconnect();
-                        _this.clearEventListeners();
-                        _this.destroy();
-                    }
-                }
+        console.log("procNode - node is NodeList ? " + (node instanceof NodeList));
+        console.log("procNode - root " + (root ? '' : 'not ') + " exists");
+        root && console.log("procNode - root._hc:" + JSON.stringify(root['_hc']));
+        if (node instanceof NodeList) {
+            for (var cnti = 0; cnti < node.length; cnti++) {
+                self.procNode(node.item(cnti), root);
             }
-        });
-        observer.observe(this.el.parentElement, { attributes: false, childList: true, subtree: false });
-        var els = this.el.querySelectorAll('*');
-        for (var cnti = 0; cnti < els.length; cnti++) {
-            var obj = els.item(cnti);
-            var attrs = obj.attributes;
-            for (var cntk = 0; cntk < attrs.length; cntk++) {
-                var attr = attrs.item(cntk);
-                if ((/^hc:for$/).test(attr.name)) {
-                    self._traces.fors.indexOf(obj) < 0 &&
-                        self._traces.fors.push(obj);
-                    var forComment = window.document.createComment("//hc-for:" + self._id + ":" + self.createTagId());
-                    obj.parentNode.insertBefore(forComment, obj);
-                    obj.parentNode.removeChild(obj);
-                    !obj['_hc'] && (obj['_hc'] = {
-                        attr: {},
-                        comment: null,
-                        for: null,
-                    });
-                    obj['_hc'].attr['for'] = attr.value;
-                    obj['_hc'].for = forComment;
-                    console.log("for - outerHTML:" + obj.outerHTML);
-                }
-            }
+            return;
         }
-        this.searchTextNodes();
-        els = this.el.querySelectorAll('*');
+        var attrs = node.attributes;
         var _loop_1 = function (cnti) {
-            var obj = els.item(cnti);
-            var attrs = obj.attributes;
-            var _loop_2 = function (cntk) {
-                var attr = attrs.item(cntk);
-                if ((/^hc:.+$/).test(attr.name)) {
-                    var hc_attr = attr.name.substring(3);
-                    if (hc_attr === 'for')
-                        return out_cntk_1 = cntk, "continue";
-                    if (hc_attr == 'ref') {
-                        self._refs[attr.value] = obj;
-                        if (obj.hasAttribute(attr.name)) {
-                            obj.removeAttribute(attr.name);
-                            --cntk;
-                        }
-                        return out_cntk_1 = cntk, "continue";
-                    }
-                    self._traces.elements.indexOf(obj) < 0 &&
-                        self._traces.elements.push(obj);
-                    !obj['_hc'] && (obj['_hc'] = {
-                        attr: {},
-                        comment: null,
-                        for: null,
-                    });
-                    if (hc_attr === 'neither') {
-                        obj['_hc'].attr['if'] = "!(" + attr.value + ")";
-                    }
-                    else {
-                        obj['_hc'].attr[hc_attr] = attr.value;
-                    }
-                    if (hc_attr === 'model') {
-                        var val = calcRes(attr.value);
-                        Array.isArray(val) && self.arrayEventListener(val);
-                        obj.tagName === 'INPUT' &&
-                            ['radio', 'checkbox'].indexOf(obj.type) > -1 &&
-                            obj.addEventListener('change', function (_evt) {
-                                var checked_value = null;
-                                (obj.type === 'radio') && (checked_value = obj.checked ? obj.value : null);
-                                (obj.type === 'checkbox') && (checked_value = obj.checked ? obj.value : (obj.hasAttribute('name') ? [] : null));
-                                var group_name = obj.hasAttribute('name') ? obj.getAttribute('name') : null;
-                                if (group_name) {
-                                    var groups = self.el.querySelectorAll("*[name=" + group_name + "]");
-                                    checked_value = self.getCheckedValue(groups, obj.type === 'checkbox');
-                                }
-                                else {
-                                    checked_value = obj.checked ? obj.value : null;
-                                }
-                                obj['_hc:force_apply'] = true;
-                                callSet(attr.value, checked_value);
-                            });
-                        obj.tagName === 'SELECT' &&
-                            ['select-one', 'select-multiple'].indexOf(obj.type) > -1 &&
-                            obj.addEventListener('change', function (_evt) {
-                                var checked_value = (obj.type === 'select-one') ? null : [];
-                                var groups = obj.querySelectorAll("option");
-                                checked_value = self.getSelectedValue(groups, obj.type === 'select-multiple');
-                                obj['_hc:force_apply'] = true;
-                                callSet(attr.value, checked_value);
-                            });
-                        ['INPUT', 'TEXTAREA'].indexOf(obj.tagName) > -1 &&
-                            ['email', 'hidden', 'number', 'password', 'search', 'tel', 'url', 'datetime', 'text', 'textarea'].indexOf(obj.type) > -1 &&
-                            obj.addEventListener('input', function (_evt) {
-                                obj['_hc:force_apply'] = true;
-                                callSet(attr.value, obj.value);
-                            });
-                    }
-                    switch (hc_attr) {
-                        case 'scroll.hit.top':
-                        case 'scroll.hit.bottom':
-                            self.registEventListener(obj, 'scroll', attr, function (evt) {
-                                if (attr.name.indexOf('bottom') > -1 ?
-                                    (self.scrollTop(obj) + self.innerHeight(obj) >= self.scrollHeight(obj)) :
-                                    (self.scrollTop(obj) <= 0)) {
-                                    call(attr.value);
-                                }
-                            });
-                            break;
-                        default:
-                            typeof (window["on" + hc_attr]) !== 'undefined' &&
-                                self.registEventListener(obj, hc_attr, attr);
-                            break;
-                    }
-                    if (obj.hasAttribute(attr.name)) {
-                        obj.removeAttribute(attr.name);
-                        --cntk;
-                    }
+            var attr = attrs.item(cnti);
+            if (!/^hc:.+$/.test(attr.name))
+                return out_cnti_1 = cnti, "continue";
+            var hc_attr = attr.name.substring(3);
+            if (hc_attr === 'for') {
+                if (node.hasAttribute(attr.name)) {
+                    node.removeAttribute(attr.name);
+                    --cnti;
                 }
-                out_cntk_1 = cntk;
-            };
-            var out_cntk_1;
-            for (var cntk = 0; cntk < attrs.length; cntk++) {
-                _loop_2(cntk);
-                cntk = out_cntk_1;
+                return out_cnti_1 = cnti, "continue";
             }
+            if (hc_attr === 'ref') {
+                self._refs[attr.value] = node;
+                if (node.hasAttribute(attr.name)) {
+                    node.removeAttribute(attr.name);
+                    --cnti;
+                }
+                return out_cnti_1 = cnti, "continue";
+            }
+            if (!root ||
+                root && !root['_hc']) {
+                self._traces.elements.indexOf(node) < 0 &&
+                    self._traces.elements.push(node);
+            }
+            !node['_hc'] && (node['_hc'] = {
+                attr: {},
+                comment: null,
+                for: null,
+            });
+            if (hc_attr === 'neither') {
+                node['_hc'].attr['if'] = "!(" + attr.value + ")";
+            }
+            else {
+                node['_hc'].attr[hc_attr] = attr.value;
+            }
+            if (hc_attr === 'model') {
+                var val = calcRes(attr.value, root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+                Array.isArray(val) && self.arrayEventListener(val);
+                node.tagName === 'INPUT' &&
+                    ['radio', 'checkbox'].indexOf(node.type) > -1 &&
+                    node.addEventListener('change', function (_evt) {
+                        var checked_value = null;
+                        (node.type === 'radio') && (checked_value = node.checked ? node.value : null);
+                        (node.type === 'checkbox') && (checked_value = node.checked ? node.value : (node.hasAttribute('name') ? [] : null));
+                        var group_name = node.hasAttribute('name') ? node.getAttribute('name') : null;
+                        if (group_name) {
+                            var groups = root.querySelectorAll("*[name=" + group_name + "]");
+                            checked_value = self.getCheckedValue(groups, node.type === 'checkbox');
+                        }
+                        else {
+                            checked_value = node.checked ? node.value : null;
+                        }
+                        node['_hc:force_apply'] = true;
+                        callSet(attr.value, checked_value);
+                    });
+                node.tagName === 'SELECT' &&
+                    ['select-one', 'select-multiple'].indexOf(node.type) > -1 &&
+                    node.addEventListener('change', function (_evt) {
+                        var checked_value = (node.type === 'select-one') ? null : [];
+                        var groups = node.querySelectorAll("option");
+                        checked_value = self.getSelectedValue(groups, node.type === 'select-multiple');
+                        node['_hc:force_apply'] = true;
+                        callSet(attr.value, checked_value);
+                    });
+                ['INPUT', 'TEXTAREA'].indexOf(node.tagName) > -1 &&
+                    ['email', 'hidden', 'number', 'password', 'search', 'tel', 'url', 'datetime', 'text', 'textarea'].indexOf(node.type) > -1 &&
+                    node.addEventListener('input', function (_evt) {
+                        node['_hc:force_apply'] = true;
+                        callSet(attr.value, node.value);
+                    });
+            }
+            switch (hc_attr) {
+                case 'scroll.hit.top':
+                case 'scroll.hit.bottom':
+                    self.registEventListener(node, 'scroll', attr, function (evt) {
+                        if (attr.name.indexOf('bottom') > -1 ?
+                            (self.scrollTop(node) + self.innerHeight(node) >= self.scrollHeight(node)) :
+                            (self.scrollTop(node) <= 0)) {
+                            call(attr.value);
+                        }
+                    });
+                    break;
+                default:
+                    typeof (window["on" + hc_attr]) !== 'undefined' &&
+                        self.registEventListener(node, hc_attr, attr);
+                    break;
+            }
+            if (node.hasAttribute(attr.name)) {
+                node.removeAttribute(attr.name);
+                --cnti;
+            }
+            out_cnti_1 = cnti;
         };
-        for (var cnti = 0; cnti < els.length; cnti++) {
+        var out_cnti_1;
+        for (var cnti = 0; cnti < attrs.length; cnti++) {
             _loop_1(cnti);
+            cnti = out_cnti_1;
         }
-        ;
-        this.applyModel();
-        this.applyFor();
-        this._on && this._on.mounted && this._on.mounted();
     };
     Hacci.prototype.redefineModel = function (prop, parent, prev_model_prop) {
         if (parent === void 0) { parent = null; }
@@ -290,17 +316,73 @@ var Hacci = (function () {
     };
     Hacci.prototype.applyFor = function () {
         var self = this;
+        var calcRes = function (val) {
+            var fn = new Function(self._txts_mstr + "return " + val + ";");
+            var fnRes = fn.apply(self);
+            typeof (fnRes) === 'function' && (fnRes = fnRes());
+            return fnRes;
+        };
         for (var cnti = 0; cnti < self._traces.fors.length; cnti++) {
             var el = self._traces.fors[cnti];
             var hc = el['_hc'];
             var html = el.outerHTML;
-            console.log("applyFor - html:" + html);
+            var model_str = String(hc.attr.for).replace(/(\(.*\)|.+)\s+(in)\s+/g, '').replace(/\s/g, '');
+            var data_str = String(hc.attr.for).replace(/\s+in\s+.*$/, '').replace(/\s/g, '');
+            var model = calcRes(model_str);
+            var parentNode = el['_hc'].for_comment.parentNode;
+            delete el['_hc'].for_txts;
+            el['_hc'].for_txts = [];
+            for (var cntk = void 0; cntk < el['_hc'].for_elements.length; cntk++) {
+                var idx = self._traces.for_elements.indexOf(el['_hc'].for_elements[cntk]);
+                idx > -1 && self._traces.for_elements.splice(idx, 1);
+                parentNode.removeChild(el['_hc'].for_elements[cntk]);
+                cntk--;
+            }
+            if (data_str.charAt(0) === '(') {
+                var data_keys = data_str.substring(1, data_str.length - 2).split(',');
+                for (var cntk = 0; cntk < model.length; cntk++) {
+                    var opt_str = '';
+                    for (var cntki = 0; cntki < data_keys.length; cntki++) {
+                        opt_str += "var " + data_keys[cntki] + "=" + model_str + "[" + cntk + "]['" + data_keys[cntki] + "'];\n";
+                    }
+                    el['_hc']['model_str'] = opt_str;
+                    var node = el.cloneNode(true);
+                    parentNode.appendChild(node);
+                    self.procNode(node, el);
+                    self.procNode(node.querySelectorAll('*'), el);
+                    self.procTextNode(node, el);
+                    self.procTextModel(el);
+                    self.procModel(node, el);
+                    self.procModel(node.querySelectorAll('*'), el);
+                }
+            }
+            else {
+                for (var cntk = 0; cntk < model.length; cntk++) {
+                    var opt_str = "var " + data_str + "=" + model_str + "[" + cntk + "];\n";
+                    el['_hc']['model_str'] = opt_str;
+                    var node = el.cloneNode(true);
+                    parentNode.appendChild(node);
+                    self.procNode(node, el);
+                    self.procNode(node.querySelectorAll('*'), el);
+                    self.procTextNode(node, el);
+                    self.procTextModel(el);
+                    self.procModel(node, el);
+                    self.procModel(node.querySelectorAll('*'), el);
+                }
+            }
         }
     };
     Hacci.prototype.applyModel = function () {
         var self = this;
-        var calcRes = function (val) {
-            var fn = new Function(self._txts_mstr + "return " + val + ";");
+        self.procModel(self._traces.elements, null);
+    };
+    Hacci.prototype.procModel = function (node, root, model_groups) {
+        if (root === void 0) { root = null; }
+        if (model_groups === void 0) { model_groups = null; }
+        var self = this;
+        var calcRes = function (val, opt_str) {
+            if (opt_str === void 0) { opt_str = null; }
+            var fn = new Function("" + self._txts_mstr + (opt_str ? opt_str : '') + "return " + val + ";");
             var fnRes = fn.apply(self);
             typeof (fnRes) === 'function' && (fnRes = fnRes());
             return fnRes;
@@ -314,86 +396,91 @@ var Hacci = (function () {
             var fn = new Function(self._txts_mstr + "return " + exec + ";");
             return fn.apply(self);
         };
-        var model_groups = [];
-        for (var cnti = 0; cnti < self._traces.elements.length; cnti++) {
-            var el = self._traces.elements[cnti];
-            var hc = el['_hc'];
-            if (hc['attr']['if']) {
-                var fnRes = calcRes(hc['attr']['if']);
-                if (fnRes === true && hc['comment']) {
-                    hc['comment'].parentNode.insertBefore(el, hc['comment']);
-                    hc['comment'].parentNode.removeChild(hc['comment']);
-                    delete hc['comment'];
-                    hc['comment'] = null;
-                }
-                else if (fnRes === false && !hc['comment']) {
-                    hc['comment'] = window.document.createComment("//hc:" + self._id + ":" + self.createTagId());
-                    el.parentNode.insertBefore(hc['comment'], el);
-                    el.parentNode.removeChild(el);
-                }
+        if (node instanceof NodeList || Array.isArray(node)) {
+            !model_groups && (model_groups = []);
+            for (var cnti = 0; cnti < node.length; cnti++) {
+                self.procModel(node[cnti], root, model_groups);
             }
-            if (hc['attr']['disabled']) {
-                var fnRes = calcRes(hc['attr']['disabled']);
-                el.disabled = fnRes;
+            return;
+        }
+        if (!node['_hc'])
+            return;
+        var hc = node['_hc'];
+        if (hc['attr']['if']) {
+            var fnRes = calcRes(hc['attr']['if'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+            if (fnRes === true && hc['comment']) {
+                hc['comment'].parentNode.insertBefore(node, hc['comment']);
+                hc['comment'].parentNode.removeChild(hc['comment']);
+                delete hc['comment'];
+                hc['comment'] = null;
             }
-            if (hc['attr']['html']) {
-                var fnRes = calcRes(hc['attr']['html']);
-                el.innerHTML = fnRes;
+            else if (fnRes === false && !hc['comment']) {
+                hc['comment'] = window.document.createComment("//hc:" + self._id + ":" + self.createTagId());
+                node.parentNode.insertBefore(hc['comment'], node);
+                node.parentNode.removeChild(node);
             }
-            if (hc['attr']['text']) {
-                var fnRes = calcRes(hc['attr']['text']);
-                el.innerText = fnRes;
-            }
-            if (hc['attr']['value']) {
-                var fnRes = calcRes(hc['attr']['value']);
-                el.value = fnRes;
-            }
-            if (hc['attr']['model']) {
-                var fnRes = calcRes(hc['attr']['model']);
-                if (el.tagName === 'INPUT' && self._toi_check.indexOf(el.type) > -1) {
-                    var call_on_change = false;
-                    var group_name = el.hasAttribute('name') ? el.getAttribute('name') : null;
-                    if (group_name) {
-                        if (model_groups.indexOf(group_name) < 0) {
-                            model_groups.push(group_name);
-                            var groups = self.el.querySelectorAll("*[name=" + group_name + "]");
-                            var changed = self.setCheckedValue(groups, fnRes);
-                            call_on_change = hc['attr']['change'] && changed;
-                        }
+        }
+        if (hc['attr']['disabled']) {
+            var fnRes = calcRes(hc['attr']['disabled'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+            node.disabled = fnRes;
+        }
+        if (hc['attr']['html']) {
+            var fnRes = calcRes(hc['attr']['html'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+            node.innerHTML = fnRes;
+        }
+        if (hc['attr']['text']) {
+            var fnRes = calcRes(hc['attr']['text'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+            node.innerText = fnRes;
+        }
+        if (hc['attr']['value']) {
+            var fnRes = calcRes(hc['attr']['value'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+            node.value = fnRes;
+        }
+        if (hc['attr']['model']) {
+            var fnRes = calcRes(hc['attr']['model'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+            if (node.tagName === 'INPUT' && self._toi_check.indexOf(node.type) > -1) {
+                var call_on_change = false;
+                var group_name = node.hasAttribute('name') ? node.getAttribute('name') : null;
+                if (group_name) {
+                    if (model_groups.indexOf(group_name) < 0) {
+                        model_groups.push(group_name);
+                        var groups = self.el.querySelectorAll("*[name=" + group_name + "]");
+                        var changed = self.setCheckedValue(groups, fnRes);
+                        call_on_change = hc['attr']['change'] && changed;
                     }
-                    else {
-                        var prev = el.checked;
-                        el.checked = el.value == fnRes;
-                        call_on_change = el.checked != prev;
-                    }
-                    if (!call_on_change && el['_hc:force_apply']) {
-                        call_on_change = true;
-                        delete el['_hc:force_apply'];
-                    }
-                    call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
                 }
-                else if (el.tagName === 'SELECT' && self._toi_select.indexOf(el.type) > -1) {
-                    var call_on_change = false;
-                    var groups = el.querySelectorAll("option");
-                    var changed = self.setSelectedValue(groups, fnRes);
-                    call_on_change = hc['attr']['change'] && changed;
-                    if (!call_on_change && el['_hc:force_apply']) {
-                        call_on_change = true;
-                        delete el['_hc:force_apply'];
-                    }
-                    call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+                else {
+                    var prev = node.checked;
+                    node.checked = node.value == fnRes;
+                    call_on_change = node.checked != prev;
                 }
-                else if (['INPUT', 'TEXTAREA'].indexOf(el.tagName) > -1 && self._toi_input.indexOf(el.type) > -1) {
-                    var call_on_input = false;
-                    var changed = el.value != fnRes;
-                    el.value = fnRes;
-                    call_on_input = hc['attr']['input'] && changed;
-                    if (!call_on_input && el['_hc:force_apply']) {
-                        call_on_input = true;
-                        delete el['_hc:force_apply'];
-                    }
-                    call_on_input && hc['attr']['input'] && call(hc['attr']['input']);
+                if (!call_on_change && node['_hc:force_apply']) {
+                    call_on_change = true;
+                    delete node['_hc:force_apply'];
                 }
+                call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+            }
+            else if (node.tagName === 'SELECT' && self._toi_select.indexOf(node.type) > -1) {
+                var call_on_change = false;
+                var groups = node.querySelectorAll("option");
+                var changed = self.setSelectedValue(groups, fnRes);
+                call_on_change = hc['attr']['change'] && changed;
+                if (!call_on_change && node['_hc:force_apply']) {
+                    call_on_change = true;
+                    delete node['_hc:force_apply'];
+                }
+                call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+            }
+            else if (['INPUT', 'TEXTAREA'].indexOf(node.tagName) > -1 && self._toi_input.indexOf(node.type) > -1) {
+                var call_on_input = false;
+                var changed = node.value != fnRes;
+                node.value = fnRes;
+                call_on_input = hc['attr']['input'] && changed;
+                if (!call_on_input && node['_hc:force_apply']) {
+                    call_on_input = true;
+                    delete node['_hc:force_apply'];
+                }
+                call_on_input && hc['attr']['input'] && call(hc['attr']['input']);
             }
         }
     };
@@ -477,30 +564,63 @@ var Hacci = (function () {
         }
         this._event_listeners = [];
     };
-    Hacci.prototype.searchTextNodes = function (parent) {
-        if (parent === void 0) { parent = null; }
-        !parent && (parent = this.el);
-        if (parent.hasChildNodes()) {
-            for (var cnti = 0; cnti < parent.childNodes.length; cnti++) {
-                switch (parent.childNodes[cnti].nodeType) {
+    Hacci.prototype.searchTextNodes = function (node, root) {
+        if (root === void 0) { root = null; }
+        !node && (node = this.el);
+        if (node.hasChildNodes()) {
+            for (var cnti = 0; cnti < node.childNodes.length; cnti++) {
+                switch (node.childNodes[cnti].nodeType) {
                     case 1:
-                        this.searchTextNodes(parent.childNodes[cnti]);
+                        this.searchTextNodes(node.childNodes[cnti], root);
                         break;
                     case 3:
-                        /{{([^}}\r\n]+)?}}/g.test(parent.childNodes[cnti].textContent) &&
-                            this._traces.txts.push({
-                                node: parent.childNodes[cnti],
-                                text: parent.childNodes[cnti].textContent,
-                                fn: null
-                            });
+                        /{{([^}}\r\n]+)?}}/g.test(node.childNodes[cnti].textContent) &&
+                            !root && this._traces.txts.push({
+                            node: node.childNodes[cnti],
+                            text: node.childNodes[cnti].textContent,
+                            fn: null
+                        });
+                        root && root['_hc'] && root['_hc']['for_txts'] && root['_hc']['for_txts'].push({
+                            node: node.childNodes[cnti],
+                            text: node.childNodes[cnti].textContent,
+                            fn: null
+                        });
                         break;
                 }
             }
             this.applyTextChange();
         }
     };
-    Hacci.prototype.applyTextChange = function () {
-        var txts = this._traces.txts;
+    Hacci.prototype.procTextNode = function (node, root) {
+        if (root === void 0) { root = null; }
+        !node && (node = this.el);
+        if (node.hasChildNodes()) {
+            for (var cnti = 0; cnti < node.childNodes.length; cnti++) {
+                switch (node.childNodes[cnti].nodeType) {
+                    case 1:
+                        this.procTextNode(node.childNodes[cnti], root);
+                        break;
+                    case 3:
+                        !root && /{{([^}}\r\n]+)?}}/g.test(node.childNodes[cnti].textContent) &&
+                            this._traces.txts.push({
+                                node: node.childNodes[cnti],
+                                text: node.childNodes[cnti].textContent,
+                                fn: null
+                            });
+                        root && /{{([^}}\r\n]+)?}}/g.test(node.childNodes[cnti].textContent) &&
+                            root['_hc'] && root['_hc']['for_txts'] && root['_hc']['for_txts'].push({
+                            node: node.childNodes[cnti],
+                            text: node.childNodes[cnti].textContent,
+                            fn: null
+                        });
+                        break;
+                }
+            }
+        }
+    };
+    Hacci.prototype.applyTextChange = function (nodes) {
+        if (nodes === void 0) { nodes = null; }
+        var txts = !nodes ? this._traces.txts : nodes;
         for (var cnti = 0; cnti < txts.length; cnti++) {
             if (!txts[cnti].fn) {
                 txts[cnti].fn = this.compileText(txts[cnti].text);
@@ -508,7 +628,18 @@ var Hacci = (function () {
             txts[cnti].node.textContent = txts[cnti].fn.apply(this);
         }
     };
-    Hacci.prototype.compileText = function (html) {
+    Hacci.prototype.procTextModel = function (nodes) {
+        if (nodes === void 0) { nodes = null; }
+        var txts = !nodes ? this._traces.txts : nodes['_hc'] && nodes['_hc']['for_txts'] ? nodes['_hc']['for_txts'] : nodes;
+        for (var cnti = 0; cnti < txts.length; cnti++) {
+            if (!txts[cnti].fn) {
+                txts[cnti].fn = this.compileText(txts[cnti].text, nodes && nodes['_hc'] && nodes['_hc']['model_str'] ? nodes['_hc']['model_str'] : null);
+            }
+            txts[cnti].node.textContent = txts[cnti].fn.apply(this);
+        }
+    };
+    Hacci.prototype.compileText = function (html, opt_str) {
+        if (opt_str === void 0) { opt_str = null; }
         if (!this._txts_mstr) {
             this._txts_mstr = '';
             var keys = Object.keys(this);
@@ -518,7 +649,7 @@ var Hacci = (function () {
                 this._txts_mstr += "var " + keys[cnti] + "=this." + keys[cnti] + ";\n";
             }
         }
-        var re = /{{([^}}]+)?}}/g, reExp = /(^( )?(if|for|else|switch|case|break|{|}))(.*)?/g, code = this._txts_mstr + 'var r=[];\n', cursor = 0, match;
+        var re = /{{([^}}]+)?}}/g, reExp = /(^( )?(if|for|else|switch|case|break|{|}))(.*)?/g, code = this._txts_mstr + (opt_str ? opt_str : '') + 'var r=[];\n', cursor = 0, match;
         var add = function (line, js) {
             if (js === void 0) { js = null; }
             js ? (code += line.match(reExp) ? line + '\n' : 'r.push(' + line + ');\n') :
@@ -715,11 +846,22 @@ var Hacci = (function () {
     };
     Hacci.prototype.destroy = function () {
         this.clearEventListeners();
+        delete this._refs;
         this._refs = {};
+        delete this._txts_mstr;
+        this._txts_mstr = '';
+        delete this._traces.fors;
+        this._traces.fors = [];
+        delete this._traces.txts;
+        this._traces.txts = [];
+        delete this._traces.elements;
+        this._traces.elements = [];
         this._template && this.el.parentElement.removeChild(this.el);
         this._template = null;
+        delete this._el;
         this._el = null;
         this._on && this._on.destroyed && this._on.destroyed();
+        delete this._on;
         this._on = {
             created: null,
             mounted: null,

@@ -56,10 +56,18 @@
                 <h3>For</h4>
                 <div class="example">
                     <table>
-                        <tr hc:for="data in list">
+                        <tr hc:click="onClick(list)" hc:for="data in list">
                             <td hc:text="data.id"></td>
                             <td>{{ data.pwd }}</td>
                             <td hc:html="data.name"></td>
+                        </tr>
+                    </table>
+                    <hr />
+                    <table>
+                        <tr hc:for="(id, pwd, name) in list">
+                            <td hc:text="id"></td>
+                            <td>{{ pwd }}</td>
+                            <td hc:html="name"></td>
                         </tr>
                     </table>
                 </div>
@@ -77,6 +85,9 @@
                     ],
                 },
                 method: {
+                    onClick: function(list) {
+                        alert('click - list:' + JSON.stringify(list));
+                    }
                 },
                 mounted: function() {
                 }
