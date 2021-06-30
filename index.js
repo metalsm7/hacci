@@ -135,7 +135,6 @@ var Hacci = (function () {
                     });
                     obj['_hc'].attr['for'] = attr.value;
                     obj['_hc'].for_comment = forComment;
-                    console.log("for - outerHTML:" + obj.outerHTML);
                 }
             }
         }
@@ -169,9 +168,6 @@ var Hacci = (function () {
             var fn = new Function(self._txts_mstr + "return " + exec + ";");
             return fn.apply(self);
         };
-        console.log("procNode - node is NodeList ? " + (node instanceof NodeList));
-        console.log("procNode - root " + (root ? '' : 'not ') + " exists");
-        root && console.log("procNode - root._hc:" + JSON.stringify(root['_hc']));
         if (node instanceof NodeList) {
             for (var cnti = 0; cnti < node.length; cnti++) {
                 self.procNode(node.item(cnti), root);
@@ -261,6 +257,9 @@ var Hacci = (function () {
                             call(attr.value);
                         }
                     });
+                    break;
+                case 'input':
+                case 'change':
                     break;
                 default:
                     typeof (window["on" + hc_attr]) !== 'undefined' &&

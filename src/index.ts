@@ -219,7 +219,7 @@ class Hacci {
                     //
                     obj['_hc'].attr['for'] = attr.value;
                     obj['_hc'].for_comment = forComment;
-                    console.log(`for - outerHTML:${(obj as HTMLElement).outerHTML}`);
+                    // console.log(`for - outerHTML:${(obj as HTMLElement).outerHTML}`);
                 }
             }
         }
@@ -453,14 +453,14 @@ class Hacci {
                 exec += '()';
             }
             exec = exec.replace(/;$/, '');
-            // console.log(`init - call - exec:${exec}`);
+            // console.log(`procNode - call - exec:${exec}`);
             const fn = new Function(`${self._txts_mstr}return ${exec};`);
             return fn.apply(self);
         }
         //
-        console.log(`procNode - node is NodeList ? ${node instanceof NodeList}`);
-        console.log(`procNode - root ${root ? '' : 'not '} exists`);
-        root && console.log(`procNode - root._hc:${JSON.stringify(root['_hc'])}`);
+        // console.log(`procNode - node is NodeList ? ${node instanceof NodeList}`);
+        // console.log(`procNode - root ${root ? '' : 'not '} exists`);
+        // root && console.log(`procNode - root._hc:${JSON.stringify(root['_hc'])}`);
         if (node instanceof NodeList) {
             for (let cnti: number = 0; cnti < node.length; cnti++) {
                 self.procNode(node.item(cnti), root);
@@ -529,6 +529,8 @@ class Hacci {
                 //
                 let val = calcRes(attr.value, root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
                 Array.isArray(val) && self.arrayEventListener(val);
+                //
+                // console.log(`procNode - hc_attr:${hc_attr} / tagName:${(node as HTMLInputElement).tagName} / type:${(node as HTMLInputElement).type}`);
                 //
                 // input radio/checkbox
                 (node as HTMLInputElement).tagName === 'INPUT' &&
@@ -616,6 +618,9 @@ class Hacci {
                         }
                     );
                     break;
+                case 'input':
+                case 'change':
+                    break;
                 default:
                     typeof(window[`on${hc_attr}`]) !== 'undefined' &&
                         self.registEventListener((node as HTMLInputElement), hc_attr, attr);
@@ -635,6 +640,7 @@ class Hacci {
         //
         if (!self._traces.model.listen) {
             self._traces.model.listen = function() {
+                // console.log(`redefineModel - listen`);
                 self.applyModel();
             };
         }
@@ -1015,7 +1021,7 @@ class Hacci {
                 exec += '()';
             }
             exec = exec.replace(/;$/, '');
-            // console.log(`applyModel - call - exec:${exec}`);
+            // console.log(`procModel - call - exec:${exec}`);
             const fn = new Function(`${self._txts_mstr}return ${exec};`);
             return fn.apply(self);
         }
@@ -1161,15 +1167,15 @@ class Hacci {
             }
             else if (['INPUT', 'TEXTAREA'].indexOf((node as HTMLElement).tagName) > -1 && self._toi_input.indexOf((node as HTMLInputElement).type) > -1) {
                 let call_on_input = false;
-                // console.log(`applyModel - input2 - tagName:${(el as HTMLElement).tagName} - value = ${(el as HTMLInputElement).value} / ${fnRes}`);
+                // console.log(`applyModel - input2 - tagName:${(node as HTMLElement).tagName} - value = ${(node as HTMLInputElement).value} / ${fnRes}`);
                 const changed = (node as HTMLInputElement).value != fnRes;
-                // console.log(`applyModel - input2 - tagName:${(el as HTMLElement).tagName} - changed:${changed}`);
+                // console.log(`applyModel - input2 - tagName:${(node as HTMLElement).tagName} - changed:${changed}`);
                 (node as HTMLInputElement).value = fnRes;
                 //
                 call_on_input = hc['attr']['input'] && changed;
-                // console.log(`applyModel - input2 - tagName:${(el as HTMLElement).tagName} - call_on_input:${call_on_input}`);
+                // console.log(`applyModel - input2 - tagName:${(node as HTMLElement).tagName} - call_on_input:${call_on_input}`);
                 //
-                // console.log(`applyModel - input2 - _hc:force_apply:${el['_hc:force_apply']}`);
+                // console.log(`applyModel - input2 - _hc:force_apply:${node['_hc:force_apply']}`);
                 if (!call_on_input && node['_hc:force_apply']) {
                     call_on_input = true;
                     delete node['_hc:force_apply'];
