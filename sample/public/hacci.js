@@ -349,7 +349,6 @@ var Hacci = (function () {
         for (var _i = 2; _i < arguments.length; _i++) {
             args[_i - 2] = arguments[_i];
         }
-        var _a;
         var self = this;
         for (var cnti = 0; cnti < self._traces.fors.length; cnti++) {
             var el = self._traces.fors[cnti];
@@ -377,7 +376,7 @@ var Hacci = (function () {
                     rms = hc.for_elements.splice(0, 1);
                     break;
                 case 'splice':
-                    rms = (_a = hc.for_elements).splice.apply(_a, args);
+                    rms = hc.for_elements.splice(args[0] ? args[0] : null, args[1] ? args[1] : null);
                     break;
             }
             if (rms) {
@@ -441,6 +440,25 @@ var Hacci = (function () {
                             procs(node, el);
                         }
                     }
+                    else if (action === 'splice' && args.length > 2) {
+                        var insert_idx = args[0];
+                        for (var cntk = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
+                            var opt_str = '';
+                            for (var cntki = 0; cntki < data_keys.length; cntki++) {
+                                opt_str += "var " + data_keys[cntki] + "=" + model_str + "[" + cntk + "]['" + data_keys[cntki] + "'];\n";
+                            }
+                            hc['model_str'] = opt_str;
+                            var node = el.cloneNode(true);
+                            if (hc.for_elements.length <= cntk) {
+                                parentNode.appendChild(node);
+                            }
+                            else {
+                                parentNode.insertBefore(node, hc.for_elements[cntk]);
+                            }
+                            hc.for_elements.splice(cntk, 0, node);
+                            procs(node, el);
+                        }
+                    }
                 }
             }
             else {
@@ -472,6 +490,22 @@ var Hacci = (function () {
                             var node = el.cloneNode(true);
                             parentNode.insertBefore(node, hc.for_elements[0]);
                             hc.for_elements.unshift(node);
+                            procs(node, el);
+                        }
+                    }
+                    else if (action === 'splice' && args.length > 2) {
+                        var insert_idx = args[0];
+                        for (var cntk = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
+                            var opt_str = "var " + data_str + "=" + model_str + "[" + cntk + "];\n";
+                            hc['model_str'] = opt_str;
+                            var node = el.cloneNode(true);
+                            if (hc.for_elements.length <= cntk) {
+                                parentNode.appendChild(node);
+                            }
+                            else {
+                                parentNode.insertBefore(node, hc.for_elements[cntk]);
+                            }
+                            hc.for_elements.splice(cntk, 0, node);
                             procs(node, el);
                         }
                     }

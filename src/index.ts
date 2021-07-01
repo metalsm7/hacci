@@ -822,7 +822,7 @@ class Hacci {
                     rms = hc.for_elements.splice(0, 1);
                     break;
                 case 'splice':
-                    rms = hc.for_elements.splice(...args);
+                    rms = hc.for_elements.splice(args[0] ? args[0] : null, args[1] ? args[1] : null);
                     break;
             }
             if (rms) {
@@ -942,6 +942,34 @@ class Hacci {
                             procs(node, el);
                         }
                     }
+                    else if (action === 'splice' && args.length > 2) {
+                        // insert index check
+                        const insert_idx: number = args[0];
+                        // console.log(`procForModel - action:${action}`);
+                        for (let cntk: number = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
+                            //
+                            let opt_str: string = '';
+                            for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
+                                opt_str += `var ${data_keys[cntki]}=${model_str}[${cntk}]['${data_keys[cntki]}'];\n`;
+                            }
+                            hc['model_str'] = opt_str;
+                            // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+        
+                            //
+                            const node: Node = (el as HTMLElement).cloneNode(true);
+                            if (hc.for_elements.length <= cntk) {
+                                parentNode.appendChild(node);
+                            }
+                            else {
+                                parentNode.insertBefore(node, hc.for_elements[cntk]);
+                            }
+                            //
+                            hc.for_elements.splice(cntk, 0, node);
+        
+                            //
+                            procs(node, el);
+                        }
+                    }
                 }
             }
             else {
@@ -994,6 +1022,31 @@ class Hacci {
                             parentNode.insertBefore(node, hc.for_elements[0]);
                             //
                             hc.for_elements.unshift(node);
+        
+                            //
+                            procs(node, el);
+                        }
+                    }
+                    else if (action === 'splice' && args.length > 2) {
+                        // insert index check
+                        const insert_idx: number = args[0];
+                        // console.log(`procForModel - action:${action}`);
+                        for (let cntk: number = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
+                            //
+                            let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
+                            hc['model_str'] = opt_str;
+                            // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+        
+                            //
+                            const node: Node = (el as HTMLElement).cloneNode(true);
+                            if (hc.for_elements.length <= cntk) {
+                                parentNode.appendChild(node);
+                            }
+                            else {
+                                parentNode.insertBefore(node, hc.for_elements[cntk]);
+                            }
+                            //
+                            hc.for_elements.splice(cntk, 0, node);
         
                             //
                             procs(node, el);
