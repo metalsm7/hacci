@@ -32,6 +32,7 @@ class Hacci {
         model: {
             value: {},
             listen: null,
+            listen_array: null,
         },
         elements: [],
         txts: [],
@@ -676,6 +677,17 @@ class Hacci {
             };
         }
         //
+        if (!self._traces.model.listen_array) {
+            self._traces.model.listen_array = function(action: string = null, ...args) {
+                // console.log(`redefineModel - listen`);
+                // self.applyModel();
+                self.procModel();
+                //
+                // self.procForNodes();
+                self.procForModel(action, ...args);
+            };
+        }
+        //
         !parent && (parent = self);
         const model = self._traces.model.value;
         //
@@ -729,8 +741,8 @@ class Hacci {
     }
 
     //
-    private procForModel(): void {
-        // console.log(`procForModel`);
+    private procForModel(action: string = null, ...args: any[]): void {
+        console.log(`procForModel - action:${action} / args:${JSON.stringify(args)}`);
         //
         const self: Hacci = this;
         //
@@ -775,18 +787,68 @@ class Hacci {
             hc.for_txts = [];
 
             //
-            // console.log(`procForModel - for_elements:->`);
-            // console.log(hc.for_elements);
-            while (hc.for_elements.length > 0) {
+            let clear: boolean = true;
+            let rms: any = null
+            switch (action) {
+                case 'push':
+                // case 'unshift':
+                    rms = [];
+                    break;
+                case 'pop':
+                    rms = hc.for_elements.splice(hc.for_elements.length - 1, 1);
+                    break;
+                // case 'shift':
+                //     rms = hc.for_elements.splice(0, 1);
+                //     break;
+                case 'splice':
+                    rms = hc.for_elements.splice(...args);
+                    break;
+            }
+            if (rms) {
                 //
-                // const idx: number = self._traces.for_elements.indexOf(hc.for_elements[cntk]);
-                // idx > -1 && self._traces.for_elements.splice(idx, 1);
+                while (rms.length > 0) {
+                    parentNode.removeChild(rms[0]);
+                    rms.splice(0, 1);
+                }
                 //
+                clear = false;
+            }
+
+            //
+            while (clear && hc.for_elements.length > 0) {
                 parentNode.removeChild(hc.for_elements[0]);
-                //
                 hc.for_elements.splice(0, 1);
             }
+
+            //
+            // console.log(`procForModel - for_elements:->`);
+            // console.log(hc.for_elements);
+            // while (hc.for_elements.length > 0) {
+            //     //
+            //     // const idx: number = self._traces.for_elements.indexOf(hc.for_elements[cntk]);
+            //     // idx > -1 && self._traces.for_elements.splice(idx, 1);
+            //     //
+            //     parentNode.removeChild(hc.for_elements[0]);
+            //     //
+            //     hc.for_elements.splice(0, 1);
+            // }
             // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+
+            //
+            const procs = function(node: Node, el: Node) {
+                //
+                self.procNode(node, el);
+                self.procNode((node as Element).querySelectorAll('*'), el);
+                
+                //
+                self.procTextNode(node, el);
+                self.procTextModel(el);
+
+                //
+                self.procModel(node, el);
+                self.procModel((node as Element).querySelectorAll('*'), el);
+            };
+
             //
             if (data_str.charAt(0) === '(') {
                 // (id, pwd, index) in rows 같이 정의된 경우 (괄호로 시작하는 경우)
@@ -794,60 +856,127 @@ class Hacci {
                 //
                 const data_keys: string[] = data_str.substring(1, data_str.length - 1).split(',');
                 // console.log(`procForModel - fors.#${idx} - data_keys:${JSON.stringify(data_keys)}`);
-                for (let cntk: number = 0; cntk < model.length; cntk++) {
+
+                //
+                if (clear) {
                     //
-                    let opt_str: string = '';
-                    for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
-                        opt_str += `var ${data_keys[cntki]}=${model_str}[${cntk}]['${data_keys[cntki]}'];\n`;
+                    for (let cntk: number = 0; cntk < model.length; cntk++) {
+                        //
+                        let opt_str: string = '';
+                        for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
+                            opt_str += `var ${data_keys[cntki]}=${model_str}[${cntk}]['${data_keys[cntki]}'];\n`;
+                        }
+                        hc['model_str'] = opt_str;
+                        // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+    
+                        //
+                        const node: Node = (el as HTMLElement).cloneNode(true);
+                        parentNode.appendChild(node);
+                        //
+                        hc.for_elements.push(node);
+    
+                        //
+                        procs(node, el);
                     }
-                    hc['model_str'] = opt_str;
-                    // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
-
-                    //
-                    const node: Node = (el as HTMLElement).cloneNode(true);
-                    parentNode.appendChild(node);
-                    //
-                    hc.for_elements.push(node);
-
-                    //
-                    self.procNode(node, el);
-                    self.procNode((node as Element).querySelectorAll('*'), el);
-                    
-                    //
-                    self.procTextNode(node, el);
-                    self.procTextModel(el);
-
-                    //
-                    self.procModel(node, el);
-                    self.procModel((node as Element).querySelectorAll('*'), el);
+                }
+                else {
+                    if (action === 'push') {
+                        for (let cntk: number = model.length - args.length; cntk < model.length; cntk++) {
+                            //
+                            let opt_str: string = '';
+                            for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
+                                opt_str += `var ${data_keys[cntki]}=${model_str}[${cntk}]['${data_keys[cntki]}'];\n`;
+                            }
+                            hc['model_str'] = opt_str;
+                            // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+        
+                            //
+                            const node: Node = (el as HTMLElement).cloneNode(true);
+                            parentNode.appendChild(node);
+                            //
+                            hc.for_elements.push(node);
+        
+                            //
+                            procs(node, el);
+                        }
+                    }
+                    else if (action === 'unshift') {
+                        for (let cntk: number = args.length - 1; cntk > 0; cntk--) {
+                            //
+                            let opt_str: string = '';
+                            for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
+                                opt_str += `var ${data_keys[cntki]}=${model_str}[${cntk}]['${data_keys[cntki]}'];\n`;
+                            }
+                            hc['model_str'] = opt_str;
+                            // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+        
+                            //
+                            const node: Node = (el as HTMLElement).cloneNode(true);
+                            parentNode.insertBefore(node, hc.for_elements[0]);
+                            //
+                            hc.for_elements.unshift(node);
+        
+                            //
+                            procs(node, el);
+                        }
+                    }
                 }
             }
             else {
                 // row in rows 같이 정의된 경우
-
                 //
-                for (let cntk: number = 0; cntk < model.length; cntk++) {
+                if (clear) {
                     //
-                    let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
-                    hc['model_str'] = opt_str;
-
-                    //
-                    const node: Node = (el as HTMLElement).cloneNode(true);
-                    parentNode.appendChild(node);
-                    //
-                    hc.for_elements.push(node);
-
-                    //
-                    self.procNode(node, el);
-                    self.procNode((node as Element).querySelectorAll('*'), el);
-                    
-                    //
-                    self.procTextNode(node, el);
-                    self.procTextModel(el);
-
-                    //
-                    self.procModel(node, el);
-                    self.procModel((node as Element).querySelectorAll('*'), el);
+                    for (let cntk: number = 0; cntk < model.length; cntk++) {
+                        //
+                        let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
+                        hc['model_str'] = opt_str;
+    
+                        //
+                        const node: Node = (el as HTMLElement).cloneNode(true);
+                        parentNode.appendChild(node);
+                        //
+                        hc.for_elements.push(node);
+    
+                        //
+                        procs(node, el);
+                    }
+                }
+                else {
+                    if (action === 'push') {
+                        for (let cntk: number = model.length - args.length; cntk < model.length; cntk++) {
+                            //
+                            let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
+                            hc['model_str'] = opt_str;
+                            // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+        
+                            //
+                            const node: Node = (el as HTMLElement).cloneNode(true);
+                            parentNode.appendChild(node);
+                            //
+                            hc.for_elements.push(node);
+        
+                            //
+                            procs(node, el);
+                        }
+                    }
+                    else if (action === 'unshift') {
+                        for (let cntk: number = args.length - 1; cntk > 0; cntk--) {
+                            //
+                            let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
+                            hc['model_str'] = opt_str;
+                            // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+        
+                            //
+                            const node: Node = (el as HTMLElement).cloneNode(true);
+                            parentNode.insertBefore(node, hc.for_elements[0]);
+                            //
+                            hc.for_elements.unshift(node);
+        
+                            //
+                            procs(node, el);
+                        }
+                    }
                 }
             }
         }
@@ -1253,27 +1382,32 @@ class Hacci {
         //
         target.push = function(...args): number {
             const rtn_val: number = Array.prototype.push.call(target, ...args);
-            self._traces.model.listen();
+            // self._traces.model.listen();
+            self._traces.model.listen_array('push', ...args);
             return rtn_val;
         },
         target.pop = function(...args): any {
             const rtn_val: any = Array.prototype.pop.call(target, ...args);
-            self._traces.model.listen();
+            // self._traces.model.listen();
+            self._traces.model.listen_array('pop', ...args);
             return rtn_val;
         },
         target.splice = function(...args): any[] {
             const rtn_val: any[] = Array.prototype.splice.call(target, ...args);
-            self._traces.model.listen();
+            // self._traces.model.listen();
+            self._traces.model.listen_array('splice', ...args);
             return rtn_val;
         },
         target.shift = function(...args): any {
             const rtn_val: any = Array.prototype.shift.call(target, ...args);
             self._traces.model.listen();
+            // self._traces.model.listen_array('shift', ...args);
             return rtn_val;
         },
         target.unshift = function(...args): number {
             const rtn_val: number = Array.prototype.unshift.call(target, ...args);
             self._traces.model.listen();
+            // self._traces.model.listen_array('unshift', ...args);
             return rtn_val;
         }
     }
