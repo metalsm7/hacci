@@ -182,16 +182,26 @@ class Hacci {
         // this.procModel();
         this.initModel();
         // console.log(`searchNodes.procModel.POST`);
-        // this.applyFor();
+        // this.procForModel();
         //
         this._on && this._on.mounted && this._on.mounted();
     }
 
-    private procForNodes(el: any): void {//
+    private procForNodes(el: any = null): void {
         //
         const self: Hacci = this;
         //
+        !el && (el = self.el);
+        //
         let els: NodeList = el.querySelectorAll('*');
+        //
+        const calcRes = function(val: string, model_str: string = null): any {
+            // console.log(`init - callSet - val:${val} / model_str:${model_str}`);
+            const fn = new Function(`${self._txts_mstr}${model_str ? model_str : ''}return ${val};`);
+            let fnRes = fn.apply(self);
+            typeof(fnRes) === 'function' && (fnRes = fnRes());
+            return fnRes;
+        }
         //
         for (let cnti: number = 0; cnti < els.length; cnti++) {
             const obj: Node = els.item(cnti);
@@ -224,12 +234,21 @@ class Hacci {
                     obj['_hc'].attr['for'] = attr.value;
                     obj['_hc'].for_comment = forComment;
                     // console.log(`for - outerHTML:${(obj as HTMLElement).outerHTML}`);
+
+                    //
+                    const model_str = String(obj['_hc'].attr.for).replace(/(\(.*\)|.+)\s+(in)\s+/g, '').replace(/\s/g, '');
+                    // const data_str = String(obj['_hc'].attr.for).replace(/\s+in\s+.*$/, '').replace(/\s/g, '');
+                    // console.log(`procForModel - fors.#${idx} - model_str:${model_str}`);
+                    // console.log(`procForModel - fors.#${idx} - data_str.#1:${data_str}`);
+                    //
+                    const model: any = calcRes(model_str);
+                    Array.isArray(model) && self.arrayEventListener(model);
                 }
             }
         }
 
         //
-        self.applyFor();
+        self.procForModel();
     }
 
     private searchNodes(el: any): void {
@@ -452,15 +471,15 @@ class Hacci {
             return fn.apply(self, [val]);
         }
         //
-        const call = function(val: string): any {
-            // console.log(`init - call - val:${val}`);
+        const call = function(val: string, model_str: string = null): any {
+            // console.log(`init - call - val:${val} / model_str:${model_str}`);
             let exec = val;
             if (val.indexOf('(') < 0) {
                 exec += '()';
             }
             exec = exec.replace(/;$/, '');
             // console.log(`procNode - call - exec:${exec}`);
-            const fn = new Function(`${self._txts_mstr}return ${exec};`);
+            const fn = new Function(`${self._txts_mstr}${model_str ? model_str : ''}return ${exec};`);
             return fn.apply(self);
         }
         //
@@ -621,7 +640,7 @@ class Hacci {
                                     (self.scrollTop(node as Element) + self.innerHeight(node) >= self.scrollHeight(node as Element)) :
                                     (self.scrollTop(node as Element) <= 0)
                             ) {
-                                call(attr.value);
+                                call(attr.value, root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
                             }
                         }
                     );
@@ -631,7 +650,7 @@ class Hacci {
                     break;
                 default:
                     typeof(window[`on${hc_attr}`]) !== 'undefined' &&
-                        self.registEventListener((node as HTMLInputElement), hc_attr, attr);
+                        self.registEventListener((node as HTMLInputElement), hc_attr, attr, null, root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
                     break;
             }
 
@@ -651,6 +670,9 @@ class Hacci {
                 // console.log(`redefineModel - listen`);
                 // self.applyModel();
                 self.procModel();
+                //
+                // self.procForNodes();
+                self.procForModel();
             };
         }
         //
@@ -707,7 +729,8 @@ class Hacci {
     }
 
     //
-    private applyFor(): void {
+    private procForModel(): void {
+        // console.log(`procForModel`);
         //
         const self: Hacci = this;
         //
@@ -719,68 +742,72 @@ class Hacci {
             return fnRes;
         }
         //
-        // console.log(`applyFor - fors.length:${self._traces.fors.length}`);
+        // console.log(`procForModel - fors.length:${self._traces.fors.length}`);
         // let idx: number = 0;
         for (let cnti: number = 0; cnti < self._traces.fors.length; cnti++) {
             // idx++;
-            // console.log(`applyFor - fors.#${idx}/${self._traces.fors.length}`);
+            // console.log(`procForModel - fors.#${idx}/${self._traces.fors.length}`);
             //
             const el: Node = self._traces.fors[cnti];
-            // console.log(`applyFor - fors.#${idx} - el:->`);
+            // console.log(`procForModel - fors.#${idx} - el:->`);
             // console.log(el);
             const hc = el['_hc'];
             //
-            const html = (el as HTMLElement).outerHTML;
-            // console.log(`applyFor - fors.#${idx} - html:${html}`);
+            // const html = (el as HTMLElement).outerHTML;
+            // console.log(`procForModel - fors.#${idx} - html:${html}`);
             //
             const model_str = String(hc.attr.for).replace(/(\(.*\)|.+)\s+(in)\s+/g, '').replace(/\s/g, '');
             const data_str = String(hc.attr.for).replace(/\s+in\s+.*$/, '').replace(/\s/g, '');
-            // console.log(`applyFor - fors.#${idx} - model_str:${model_str}`);
-            // console.log(`applyFor - fors.#${idx} - data_str.#1:${data_str}`);
+            // console.log(`procForModel - fors.#${idx} - model_str:${model_str}`);
+            // console.log(`procForModel - fors.#${idx} - data_str.#1:${data_str}`);
             //
             const model: any = calcRes(model_str);
-            // console.log(`applyFor - fors.#${idx} - model:->`);
+            // console.log(`procForModel - fors.#${idx} - model:->`);
             // console.log(model);
 
             //
-            const parentNode: Node = (el['_hc'].for_comment as Node).parentNode;
-            // console.log(`applyFor - fors.#${idx} - parentNode:->`);
+            const parentNode: Node = (hc.for_comment as Node).parentNode;
+            // console.log(`procForModel - fors - parentNode:->`);
             // console.log(parentNode);
 
             //
-            delete el['_hc'].for_txts;
-            el['_hc'].for_txts = [];
+            delete hc.for_txts;
+            hc.for_txts = [];
 
             //
-            for (let cntk: number; cntk < el['_hc'].for_elements.length; cntk++) {
+            // console.log(`procForModel - for_elements:->`);
+            // console.log(hc.for_elements);
+            while (hc.for_elements.length > 0) {
                 //
-                const idx: number = self._traces.for_elements.indexOf(el['_hc'].for_elements[cntk]);
-                idx > -1 && self._traces.for_elements.splice(idx, 1);
+                // const idx: number = self._traces.for_elements.indexOf(hc.for_elements[cntk]);
+                // idx > -1 && self._traces.for_elements.splice(idx, 1);
                 //
-                parentNode.removeChild(el['_hc'].for_elements[cntk]);
+                parentNode.removeChild(hc.for_elements[0]);
                 //
-                cntk--;
+                hc.for_elements.splice(0, 1);
             }
-            // console.log(`applyFor - fors.#${idx} - data_str.#2:${data_str}`);
+            // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
             //
             if (data_str.charAt(0) === '(') {
                 // (id, pwd, index) in rows 같이 정의된 경우 (괄호로 시작하는 경우)
 
                 //
-                const data_keys: string[] = data_str.substring(1, data_str.length - 2).split(',');
-                // console.log(`applyFor - fors.#${idx} - data_keys:${JSON.stringify(data_keys)}`);
+                const data_keys: string[] = data_str.substring(1, data_str.length - 1).split(',');
+                // console.log(`procForModel - fors.#${idx} - data_keys:${JSON.stringify(data_keys)}`);
                 for (let cntk: number = 0; cntk < model.length; cntk++) {
                     //
                     let opt_str: string = '';
                     for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
                         opt_str += `var ${data_keys[cntki]}=${model_str}[${cntk}]['${data_keys[cntki]}'];\n`;
                     }
-                    el['_hc']['model_str'] = opt_str;
-                    // console.log(`applyFor - fors.#${idx} - data_str.#2:${data_str}`);
+                    hc['model_str'] = opt_str;
+                    // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
 
                     //
                     const node: Node = (el as HTMLElement).cloneNode(true);
                     parentNode.appendChild(node);
+                    //
+                    hc.for_elements.push(node);
 
                     //
                     self.procNode(node, el);
@@ -802,11 +829,13 @@ class Hacci {
                 for (let cntk: number = 0; cntk < model.length; cntk++) {
                     //
                     let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
-                    el['_hc']['model_str'] = opt_str;
+                    hc['model_str'] = opt_str;
 
                     //
                     const node: Node = (el as HTMLElement).cloneNode(true);
                     parentNode.appendChild(node);
+                    //
+                    hc.for_elements.push(node);
 
                     //
                     self.procNode(node, el);
@@ -1033,7 +1062,7 @@ class Hacci {
             return fnRes;
         }
         //
-        const call = function(val: string): any {
+        const call = function(val: string, opt_str: string = null): any {
             // console.log(`procModel - call - val:${val}`);
             let exec = val;
             if (val.indexOf('(') < 0) {
@@ -1041,7 +1070,7 @@ class Hacci {
             }
             exec = exec.replace(/;$/, '');
             // console.log(`procModel - call - exec:${exec}`);
-            const fn = new Function(`${self._txts_mstr}return ${exec};`);
+            const fn = new Function(`${self._txts_mstr}${opt_str ? opt_str : ''}return ${exec};`);
             return fn.apply(self);
         }
 
@@ -1159,7 +1188,7 @@ class Hacci {
                 //
                 // console.log(`procModel - input - call_on_change.#4:${call_on_change} / is_init:${is_init}`);
                 // console.log(`procModel - input - call.#1:${hc['attr']['change']}`);
-                !is_init && call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+                !is_init && call_on_change && hc['attr']['change'] && call(hc['attr']['change'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
                 // if (call_on_change) {
                 //     call(hc['attr']['change']);
                 // }
@@ -1181,7 +1210,7 @@ class Hacci {
                     delete node['_hc:force_apply'];
                 }
                 //
-                !is_init && call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+                !is_init && call_on_change && hc['attr']['change'] && call(hc['attr']['change'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
                 // if (call_on_change) {
                 //     call(hc['attr']['change']);
                 // }
@@ -1202,7 +1231,7 @@ class Hacci {
                     delete node['_hc:force_apply'];
                 }
                 //
-                !is_init && call_on_input && hc['attr']['input'] && call(hc['attr']['input']);
+                !is_init && call_on_input && hc['attr']['input'] && call(hc['attr']['input'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
                 // if (call_on_input) {
                 //     call(hc['attr']['input']);
                 // }
@@ -1216,6 +1245,7 @@ class Hacci {
      * @param target 
      */
     private arrayEventListener(target: Array<any>): void {
+        // console.log(`arrayEventListener`);
         //
         const self: Hacci = this;
         // const listen = this._traces.model.listen();
@@ -1248,10 +1278,10 @@ class Hacci {
         }
     }
 
-    private registEventListener(el: Element, name: string, attr: Attr, listener: EventListenerOrEventListenerObject = null): void {
+    private registEventListener(el: Element, name: string, attr: Attr, listener: EventListenerOrEventListenerObject = null, model_str: string = null): void {
         const self: Hacci = this;
         //
-        const call = function(evt: Event, val: string): any {
+        const call = function(evt: Event, val: string, model_str: string = null): any {
             // console.log(`registEventListener - call - val:${val}`);
             //
             let exec = val;
@@ -1263,12 +1293,12 @@ class Hacci {
             const args = `try{ var _event=arguments[0]; } catch(e) { _event=arguments[0]; }\n`;
             //
             // console.log(`registEventListener - call - exec:${exec}`);
-            const fn = new Function(`${self._txts_mstr}${args}return ${exec};`);
+            const fn = new Function(`${self._txts_mstr}${model_str ? model_str : ''}${args}return ${exec};`);
             return fn.apply(self, [evt]);
         }
         //
         !listener &&
-            (listener = function(evt: Event) { call(evt, attr.value) });
+            (listener = function(evt: Event) { call(evt, attr.value, model_str) });
         //
         el.addEventListener(name, listener);
         //
@@ -1305,6 +1335,7 @@ class Hacci {
                                 text: node.childNodes[cnti].textContent,
                                 fn: null    // 컴파일된 함수
                             });
+                        /{{([^}}\r\n]+)?}}/g.test(node.childNodes[cnti].textContent) &&
                             root && root['_hc'] && root['_hc']['for_txts'] && root['_hc']['for_txts'].push({
                                 node: node.childNodes[cnti],
                                 text: node.childNodes[cnti].textContent,

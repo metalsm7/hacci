@@ -112,8 +112,17 @@ var Hacci = (function () {
         this._on && this._on.mounted && this._on.mounted();
     };
     Hacci.prototype.procForNodes = function (el) {
+        if (el === void 0) { el = null; }
         var self = this;
+        !el && (el = self.el);
         var els = el.querySelectorAll('*');
+        var calcRes = function (val, model_str) {
+            if (model_str === void 0) { model_str = null; }
+            var fn = new Function("" + self._txts_mstr + (model_str ? model_str : '') + "return " + val + ";");
+            var fnRes = fn.apply(self);
+            typeof (fnRes) === 'function' && (fnRes = fnRes());
+            return fnRes;
+        };
         for (var cnti = 0; cnti < els.length; cnti++) {
             var obj = els.item(cnti);
             var attrs = obj.attributes;
@@ -135,10 +144,13 @@ var Hacci = (function () {
                     });
                     obj['_hc'].attr['for'] = attr.value;
                     obj['_hc'].for_comment = forComment;
+                    var model_str = String(obj['_hc'].attr.for).replace(/(\(.*\)|.+)\s+(in)\s+/g, '').replace(/\s/g, '');
+                    var model = calcRes(model_str);
+                    Array.isArray(model) && self.arrayEventListener(model);
                 }
             }
         }
-        self.applyFor();
+        self.procForModel();
     };
     Hacci.prototype.searchNodes = function (el) {
         var self = this;
@@ -159,13 +171,14 @@ var Hacci = (function () {
             var fn = new Function("this." + model + "=arguments[0];(Array.isArray(this." + model + ") && this.arrayEventListener(this." + model + "));");
             return fn.apply(self, [val]);
         };
-        var call = function (val) {
+        var call = function (val, model_str) {
+            if (model_str === void 0) { model_str = null; }
             var exec = val;
             if (val.indexOf('(') < 0) {
                 exec += '()';
             }
             exec = exec.replace(/;$/, '');
-            var fn = new Function(self._txts_mstr + "return " + exec + ";");
+            var fn = new Function("" + self._txts_mstr + (model_str ? model_str : '') + "return " + exec + ";");
             return fn.apply(self);
         };
         if (node instanceof NodeList) {
@@ -254,7 +267,7 @@ var Hacci = (function () {
                         if (attr.name.indexOf('bottom') > -1 ?
                             (self.scrollTop(node) + self.innerHeight(node) >= self.scrollHeight(node)) :
                             (self.scrollTop(node) <= 0)) {
-                            call(attr.value);
+                            call(attr.value, root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
                         }
                     });
                     break;
@@ -263,7 +276,7 @@ var Hacci = (function () {
                     break;
                 default:
                     typeof (window["on" + hc_attr]) !== 'undefined' &&
-                        self.registEventListener(node, hc_attr, attr);
+                        self.registEventListener(node, hc_attr, attr, null, root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
                     break;
             }
             if (node.hasAttribute(attr.name)) {
@@ -285,6 +298,7 @@ var Hacci = (function () {
         if (!self._traces.model.listen) {
             self._traces.model.listen = function () {
                 self.procModel();
+                self.procForModel();
             };
         }
         !parent && (parent = self);
@@ -313,7 +327,7 @@ var Hacci = (function () {
             }
         }
     };
-    Hacci.prototype.applyFor = function () {
+    Hacci.prototype.procForModel = function () {
         var self = this;
         var calcRes = function (val) {
             var fn = new Function(self._txts_mstr + "return " + val + ";");
@@ -324,29 +338,27 @@ var Hacci = (function () {
         for (var cnti = 0; cnti < self._traces.fors.length; cnti++) {
             var el = self._traces.fors[cnti];
             var hc = el['_hc'];
-            var html = el.outerHTML;
             var model_str = String(hc.attr.for).replace(/(\(.*\)|.+)\s+(in)\s+/g, '').replace(/\s/g, '');
             var data_str = String(hc.attr.for).replace(/\s+in\s+.*$/, '').replace(/\s/g, '');
             var model = calcRes(model_str);
-            var parentNode = el['_hc'].for_comment.parentNode;
-            delete el['_hc'].for_txts;
-            el['_hc'].for_txts = [];
-            for (var cntk = void 0; cntk < el['_hc'].for_elements.length; cntk++) {
-                var idx = self._traces.for_elements.indexOf(el['_hc'].for_elements[cntk]);
-                idx > -1 && self._traces.for_elements.splice(idx, 1);
-                parentNode.removeChild(el['_hc'].for_elements[cntk]);
-                cntk--;
+            var parentNode = hc.for_comment.parentNode;
+            delete hc.for_txts;
+            hc.for_txts = [];
+            while (hc.for_elements.length > 0) {
+                parentNode.removeChild(hc.for_elements[0]);
+                hc.for_elements.splice(0, 1);
             }
             if (data_str.charAt(0) === '(') {
-                var data_keys = data_str.substring(1, data_str.length - 2).split(',');
+                var data_keys = data_str.substring(1, data_str.length - 1).split(',');
                 for (var cntk = 0; cntk < model.length; cntk++) {
                     var opt_str = '';
                     for (var cntki = 0; cntki < data_keys.length; cntki++) {
                         opt_str += "var " + data_keys[cntki] + "=" + model_str + "[" + cntk + "]['" + data_keys[cntki] + "'];\n";
                     }
-                    el['_hc']['model_str'] = opt_str;
+                    hc['model_str'] = opt_str;
                     var node = el.cloneNode(true);
                     parentNode.appendChild(node);
+                    hc.for_elements.push(node);
                     self.procNode(node, el);
                     self.procNode(node.querySelectorAll('*'), el);
                     self.procTextNode(node, el);
@@ -358,9 +370,10 @@ var Hacci = (function () {
             else {
                 for (var cntk = 0; cntk < model.length; cntk++) {
                     var opt_str = "var " + data_str + "=" + model_str + "[" + cntk + "];\n";
-                    el['_hc']['model_str'] = opt_str;
+                    hc['model_str'] = opt_str;
                     var node = el.cloneNode(true);
                     parentNode.appendChild(node);
+                    hc.for_elements.push(node);
                     self.procNode(node, el);
                     self.procNode(node.querySelectorAll('*'), el);
                     self.procTextNode(node, el);
@@ -388,13 +401,14 @@ var Hacci = (function () {
             typeof (fnRes) === 'function' && (fnRes = fnRes());
             return fnRes;
         };
-        var call = function (val) {
+        var call = function (val, opt_str) {
+            if (opt_str === void 0) { opt_str = null; }
             var exec = val;
             if (val.indexOf('(') < 0) {
                 exec += '()';
             }
             exec = exec.replace(/;$/, '');
-            var fn = new Function(self._txts_mstr + "return " + exec + ";");
+            var fn = new Function("" + self._txts_mstr + (opt_str ? opt_str : '') + "return " + exec + ";");
             return fn.apply(self);
         };
         if (node instanceof NodeList || Array.isArray(node)) {
@@ -459,7 +473,7 @@ var Hacci = (function () {
                     call_on_change = true;
                     delete node['_hc:force_apply'];
                 }
-                !is_init && call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+                !is_init && call_on_change && hc['attr']['change'] && call(hc['attr']['change'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             }
             else if (node.tagName === 'SELECT' && self._toi_select.indexOf(node.type) > -1) {
                 var call_on_change = false;
@@ -470,7 +484,7 @@ var Hacci = (function () {
                     call_on_change = true;
                     delete node['_hc:force_apply'];
                 }
-                !is_init && call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+                !is_init && call_on_change && hc['attr']['change'] && call(hc['attr']['change'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             }
             else if (['INPUT', 'TEXTAREA'].indexOf(node.tagName) > -1 && self._toi_input.indexOf(node.type) > -1) {
                 var call_on_input = false;
@@ -481,7 +495,7 @@ var Hacci = (function () {
                     call_on_input = true;
                     delete node['_hc:force_apply'];
                 }
-                !is_init && call_on_input && hc['attr']['input'] && call(hc['attr']['input']);
+                !is_init && call_on_input && hc['attr']['input'] && call(hc['attr']['input'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             }
         }
     };
@@ -538,21 +552,23 @@ var Hacci = (function () {
                 return rtn_val;
             };
     };
-    Hacci.prototype.registEventListener = function (el, name, attr, listener) {
+    Hacci.prototype.registEventListener = function (el, name, attr, listener, model_str) {
         if (listener === void 0) { listener = null; }
+        if (model_str === void 0) { model_str = null; }
         var self = this;
-        var call = function (evt, val) {
+        var call = function (evt, val, model_str) {
+            if (model_str === void 0) { model_str = null; }
             var exec = val;
             if (val.indexOf('(') < 0) {
                 exec += '(_event)';
             }
             exec = exec.replace(/;$/, '');
             var args = "try{ var _event=arguments[0]; } catch(e) { _event=arguments[0]; }\n";
-            var fn = new Function("" + self._txts_mstr + args + "return " + exec + ";");
+            var fn = new Function("" + self._txts_mstr + (model_str ? model_str : '') + args + "return " + exec + ";");
             return fn.apply(self, [evt]);
         };
         !listener &&
-            (listener = function (evt) { call(evt, attr.value); });
+            (listener = function (evt) { call(evt, attr.value, model_str); });
         el.addEventListener(name, listener);
         this._event_listeners.push({
             el: el, name: name, listener: listener,
@@ -581,7 +597,8 @@ var Hacci = (function () {
                             text: node.childNodes[cnti].textContent,
                             fn: null
                         });
-                        root && root['_hc'] && root['_hc']['for_txts'] && root['_hc']['for_txts'].push({
+                        /{{([^}}\r\n]+)?}}/g.test(node.childNodes[cnti].textContent) &&
+                            root && root['_hc'] && root['_hc']['for_txts'] && root['_hc']['for_txts'].push({
                             node: node.childNodes[cnti],
                             text: node.childNodes[cnti].textContent,
                             fn: null

@@ -30,7 +30,7 @@ declare class Hacci {
     private searchNodes;
     private procNode;
     private redefineModel;
-    private applyFor;
+    private procForModel;
     private initModel;
     private procModel;
     private arrayEventListener;
