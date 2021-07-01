@@ -108,7 +108,7 @@ var Hacci = (function () {
         }
         this.searchNodes(self.el);
         this.searchTextNodes(self.el);
-        this.applyModel();
+        this.initModel();
         this._on && this._on.mounted && this._on.mounted();
     };
     Hacci.prototype.procForNodes = function (el) {
@@ -284,7 +284,7 @@ var Hacci = (function () {
         var self = this;
         if (!self._traces.model.listen) {
             self._traces.model.listen = function () {
-                self.applyModel();
+                self.procModel();
             };
         }
         !parent && (parent = self);
@@ -371,14 +371,16 @@ var Hacci = (function () {
             }
         }
     };
-    Hacci.prototype.applyModel = function () {
-        var self = this;
-        self.procModel(self._traces.elements, null);
+    Hacci.prototype.initModel = function () {
+        this.procModel(null, null, null, true);
     };
-    Hacci.prototype.procModel = function (node, root, model_groups) {
+    Hacci.prototype.procModel = function (node, root, model_groups, is_init) {
+        if (node === void 0) { node = null; }
         if (root === void 0) { root = null; }
         if (model_groups === void 0) { model_groups = null; }
+        if (is_init === void 0) { is_init = false; }
         var self = this;
+        !node && (node = self._traces.elements);
         var calcRes = function (val, opt_str) {
             if (opt_str === void 0) { opt_str = null; }
             var fn = new Function("" + self._txts_mstr + (opt_str ? opt_str : '') + "return " + val + ";");
@@ -398,7 +400,7 @@ var Hacci = (function () {
         if (node instanceof NodeList || Array.isArray(node)) {
             !model_groups && (model_groups = []);
             for (var cnti = 0; cnti < node.length; cnti++) {
-                self.procModel(node[cnti], root, model_groups);
+                self.procModel(node[cnti], root, model_groups, is_init);
             }
             return;
         }
@@ -457,7 +459,7 @@ var Hacci = (function () {
                     call_on_change = true;
                     delete node['_hc:force_apply'];
                 }
-                call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+                !is_init && call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
             }
             else if (node.tagName === 'SELECT' && self._toi_select.indexOf(node.type) > -1) {
                 var call_on_change = false;
@@ -468,7 +470,7 @@ var Hacci = (function () {
                     call_on_change = true;
                     delete node['_hc:force_apply'];
                 }
-                call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+                !is_init && call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
             }
             else if (['INPUT', 'TEXTAREA'].indexOf(node.tagName) > -1 && self._toi_input.indexOf(node.type) > -1) {
                 var call_on_input = false;
@@ -479,7 +481,7 @@ var Hacci = (function () {
                     call_on_input = true;
                     delete node['_hc:force_apply'];
                 }
-                call_on_input && hc['attr']['input'] && call(hc['attr']['input']);
+                !is_init && call_on_input && hc['attr']['input'] && call(hc['attr']['input']);
             }
         }
     };
@@ -753,10 +755,8 @@ var Hacci = (function () {
     };
     Hacci.prototype.setCheckedValue = function (groups, value) {
         var rtn_val = false;
-        var has_checked = false;
         for (var cntk = 0; cntk < groups.length; cntk++) {
             var item = groups[cntk];
-            !has_checked && item.checked && (has_checked = true);
             !rtn_val &&
                 (item.checked &&
                     (Array.isArray(value) ?

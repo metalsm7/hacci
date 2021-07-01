@@ -31,7 +31,7 @@ declare class Hacci {
     private procNode;
     private redefineModel;
     private applyFor;
-    private applyModel;
+    private initModel;
     private procModel;
     private arrayEventListener;
     private registEventListener;

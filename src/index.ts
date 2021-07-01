@@ -177,7 +177,11 @@ class Hacci {
         // this.procTextModel(self._traces.txts);
 
         //
-        this.applyModel();
+        // console.log(`searchNodes.procModel.PRE`);
+        // this.applyModel();
+        // this.procModel();
+        this.initModel();
+        // console.log(`searchNodes.procModel.POST`);
         // this.applyFor();
         //
         this._on && this._on.mounted && this._on.mounted();
@@ -435,6 +439,7 @@ class Hacci {
         const self: Hacci = this;
         //
         const calcRes = function(val: string, model_str: string = null): any {
+            // console.log(`init - callSet - val:${val} / model_str:${model_str}`);
             const fn = new Function(`${self._txts_mstr}${model_str ? model_str : ''}return ${val};`);
             let fnRes = fn.apply(self);
             typeof(fnRes) === 'function' && (fnRes = fnRes());
@@ -442,12 +447,13 @@ class Hacci {
         }
         //
         const callSet = function(model: string, val: any): any {
-            // console.log(`init - callSet - this.${model}=${val};`)
+            // console.log(`init - callSet - model:${model} / val:${val}`);
             const fn = new Function(`this.${model}=arguments[0];(Array.isArray(this.${model}) && this.arrayEventListener(this.${model}));`);
             return fn.apply(self, [val]);
         }
         //
         const call = function(val: string): any {
+            // console.log(`init - call - val:${val}`);
             let exec = val;
             if (val.indexOf('(') < 0) {
                 exec += '()';
@@ -527,6 +533,8 @@ class Hacci {
             //
             if (hc_attr === 'model') { // model의 경우 change/input attr 존재 여부 확인
                 //
+                // console.log(`procNode - attr:${hc_attr}`);
+                // console.log(`procNode - calcRes - ${attr.value}`);
                 let val = calcRes(attr.value, root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
                 Array.isArray(val) && self.arrayEventListener(val);
                 //
@@ -551,7 +559,7 @@ class Hacci {
                             // console.log(`model.change - group_name:${group_name} - checked_value.#2:${checked_value}`);
                         }
                         else {
-                            // console.log(`model.change - value - ${(obj as HTMLInputElement).value} / ${val}`);
+                            // console.log(`model.change - value - ${(node as HTMLInputElement).value} / ${val}`);
                             // (obj as HTMLInputElement).checked = (obj as HTMLInputElement).value == val;
                             // (obj as HTMLInputElement).checked && (checked_value = (obj as HTMLInputElement).value);
                             checked_value = (node as HTMLInputElement).checked ? (node as HTMLInputElement).value : null;
@@ -641,7 +649,8 @@ class Hacci {
         if (!self._traces.model.listen) {
             self._traces.model.listen = function() {
                 // console.log(`redefineModel - listen`);
-                self.applyModel();
+                // self.applyModel();
+                self.procModel();
             };
         }
         //
@@ -815,200 +824,209 @@ class Hacci {
         }
     }
     
-    //
-    private applyModel(): void {
-        //
-        const self: Hacci = this;
+    // //
+    // private applyModel(): void {
+    //     //
+    //     const self: Hacci = this;
 
-        // //
-        // const calcRes = function(val: string): any {
-        //     // console.log(`applyModel - calcRes - val:${val}`);
-        //     const fn = new Function(`${self._txts_mstr}return ${val};`);
-        //     let fnRes = fn.apply(self);
-        //     typeof(fnRes) === 'function' && (fnRes = fnRes());
-        //     return fnRes;
-        // }
-        // //
-        // const call = function(val: string): any {
-        //     let exec = val;
-        //     if (val.indexOf('(') < 0) {
-        //         exec += '()';
-        //     }
-        //     exec = exec.replace(/;$/, '');
-        //     // console.log(`applyModel - call - exec:${exec}`);
-        //     const fn = new Function(`${self._txts_mstr}return ${exec};`);
-        //     return fn.apply(self);
-        // }
-        //
+    //     // //
+    //     // const calcRes = function(val: string): any {
+    //     //     // console.log(`applyModel - calcRes - val:${val}`);
+    //     //     const fn = new Function(`${self._txts_mstr}return ${val};`);
+    //     //     let fnRes = fn.apply(self);
+    //     //     typeof(fnRes) === 'function' && (fnRes = fnRes());
+    //     //     return fnRes;
+    //     // }
+    //     // //
+    //     // const call = function(val: string): any {
+    //     //     let exec = val;
+    //     //     if (val.indexOf('(') < 0) {
+    //     //         exec += '()';
+    //     //     }
+    //     //     exec = exec.replace(/;$/, '');
+    //     //     // console.log(`applyModel - call - exec:${exec}`);
+    //     //     const fn = new Function(`${self._txts_mstr}return ${exec};`);
+    //     //     return fn.apply(self);
+    //     // }
+    //     //
         
-        //
-        self.procModel(self._traces.elements, null);
+    //     //
+    //     // self.procModel(self._traces.elements, null);
+    //     self.procModel();
         
-        // const model_groups = [];
-        //
-        // for (let cnti: number = 0; cnti < self._traces.elements.length; cnti++) {
-        //     //
-        //     const el: Node = self._traces.elements[cnti];
+    //     // const model_groups = [];
+    //     //
+    //     // for (let cnti: number = 0; cnti < self._traces.elements.length; cnti++) {
+    //     //     //
+    //     //     const el: Node = self._traces.elements[cnti];
 
 
 
-            // const hc = el['_hc'];
+    //         // const hc = el['_hc'];
 
-            // // // attribute 목록 확인
-            // // const attrs: string[] = Object.keys(el['_hc'].attr);
-            // // console.log(`_hc:${JSON.stringify(el['_hc'])}`);
+    //         // // // attribute 목록 확인
+    //         // // const attrs: string[] = Object.keys(el['_hc'].attr);
+    //         // // console.log(`_hc:${JSON.stringify(el['_hc'])}`);
 
-            // // for (let cntk: number = 0; cntk < attrs.length; cntk++) {
-            // //     const attr: string = attrs[cntk];
-            // // }
+    //         // // for (let cntk: number = 0; cntk < attrs.length; cntk++) {
+    //         // //     const attr: string = attrs[cntk];
+    //         // // }
 
-            // //
-            // // console.log(`applyModel - hc.attr:${Object.keys(hc['attr'])}`);
-            // // if
-            // if (hc['attr']['if']) {
-            //     const fnRes = calcRes(hc['attr']['if']);
-            //     //
-            //     // console.log(`if - ${hc['attr']['if']} = ${fnRes}`);
-            //     //
-            //     if (fnRes === true && hc['comment']) {
-            //         // comment -> real
-            //         // console.log(`if - comment -> real`);
+    //         // //
+    //         // // console.log(`applyModel - hc.attr:${Object.keys(hc['attr'])}`);
+    //         // // if
+    //         // if (hc['attr']['if']) {
+    //         //     const fnRes = calcRes(hc['attr']['if']);
+    //         //     //
+    //         //     // console.log(`if - ${hc['attr']['if']} = ${fnRes}`);
+    //         //     //
+    //         //     if (fnRes === true && hc['comment']) {
+    //         //         // comment -> real
+    //         //         // console.log(`if - comment -> real`);
 
-            //         //
-            //         hc['comment'].parentNode.insertBefore(el, hc['comment']);
-            //         hc['comment'].parentNode.removeChild(hc['comment']);
-            //         delete hc['comment'];
-            //         hc['comment'] = null;
-            //     }
-            //     else if (fnRes === false && !hc['comment']) {
-            //         // real -> comment
-            //         // console.log(`if - real -> comment`);
+    //         //         //
+    //         //         hc['comment'].parentNode.insertBefore(el, hc['comment']);
+    //         //         hc['comment'].parentNode.removeChild(hc['comment']);
+    //         //         delete hc['comment'];
+    //         //         hc['comment'] = null;
+    //         //     }
+    //         //     else if (fnRes === false && !hc['comment']) {
+    //         //         // real -> comment
+    //         //         // console.log(`if - real -> comment`);
 
-            //         //
-            //         hc['comment'] = window.document.createComment(`//hc:${self._id}:${self.createTagId()}`);
-            //         el.parentNode.insertBefore(hc['comment'], el);
-            //         el.parentNode.removeChild(el);
-            //     }
-            // }
-            // if (hc['attr']['disabled']) {
-            //     const fnRes = calcRes(hc['attr']['disabled']);
-            //     //
-            //     (el as HTMLInputElement).disabled = fnRes;
-            // }
-            // if (hc['attr']['html']) {
-            //     const fnRes = calcRes(hc['attr']['html']);
-            //     //
-            //     (el as Element).innerHTML = fnRes;
-            //     // console.log(`applyModel - html:${(el as Element).innerHTML}`);
-            // }
-            // if (hc['attr']['text']) {
-            //     const fnRes = calcRes(hc['attr']['text']);
-            //     //
-            //     (el as HTMLElement).innerText = fnRes;
-            // }
-            // if (hc['attr']['value']) {
-            //     const fnRes = calcRes(hc['attr']['value']);
-            //     //
-            //     (el as HTMLInputElement).value = fnRes;
-            // }
-            // if (hc['attr']['model']) {
-            //     const fnRes = calcRes(hc['attr']['model']);
+    //         //         //
+    //         //         hc['comment'] = window.document.createComment(`//hc:${self._id}:${self.createTagId()}`);
+    //         //         el.parentNode.insertBefore(hc['comment'], el);
+    //         //         el.parentNode.removeChild(el);
+    //         //     }
+    //         // }
+    //         // if (hc['attr']['disabled']) {
+    //         //     const fnRes = calcRes(hc['attr']['disabled']);
+    //         //     //
+    //         //     (el as HTMLInputElement).disabled = fnRes;
+    //         // }
+    //         // if (hc['attr']['html']) {
+    //         //     const fnRes = calcRes(hc['attr']['html']);
+    //         //     //
+    //         //     (el as Element).innerHTML = fnRes;
+    //         //     // console.log(`applyModel - html:${(el as Element).innerHTML}`);
+    //         // }
+    //         // if (hc['attr']['text']) {
+    //         //     const fnRes = calcRes(hc['attr']['text']);
+    //         //     //
+    //         //     (el as HTMLElement).innerText = fnRes;
+    //         // }
+    //         // if (hc['attr']['value']) {
+    //         //     const fnRes = calcRes(hc['attr']['value']);
+    //         //     //
+    //         //     (el as HTMLInputElement).value = fnRes;
+    //         // }
+    //         // if (hc['attr']['model']) {
+    //         //     const fnRes = calcRes(hc['attr']['model']);
 
-            //     //
-            //     if ((el as HTMLElement).tagName === 'INPUT' && self._toi_check.indexOf((el as HTMLInputElement).type) > -1) {
-            //         let call_on_change = false;
-            //         const group_name = (el as HTMLElement).hasAttribute('name') ? (el as HTMLElement).getAttribute('name') : null;
-            //         // console.log(`applyModel - input - group_name:${group_name}${group_name ? ` / model_groups.indexOf:${model_groups.indexOf(group_name)}` : ''}`);
-            //         if (group_name) {
-            //             //
-            //             if (model_groups.indexOf(group_name) < 0) {
-            //                 model_groups.push(group_name);
-            //                 //
-            //                 const groups = self.el.querySelectorAll(`*[name=${group_name}]`);
-            //                 const changed = self.setCheckedValue(groups, fnRes);
-            //                 // console.log(`applyModel - input - group_name:${group_name} - groups:${groups} / ${groups.length}`);
-            //                 // console.log(`applyModel - input - group_name:${group_name} - changed:${changed}`);
-            //                 //
-            //                 call_on_change = hc['attr']['change'] && changed;
-            //                 // console.log(`applyModel - input - group_name:${group_name} - call_on_change:${call_on_change}`);
-            //             }
-            //         }
-            //         else {
-            //             const prev: boolean = (el as HTMLInputElement).checked;
-            //             // console.log(`applyModel - input - prev:${prev}`);
-            //             // console.log(`applyModel - input - checked:${(el as HTMLInputElement).checked} / value - ${(el as HTMLInputElement).value} / ${fnRes}`);
-            //             (el as HTMLInputElement).checked = (el as HTMLInputElement).value == fnRes;
-            //             //
-            //             call_on_change = (el as HTMLInputElement).checked != prev;
-            //             // console.log(`applyModel - input - call_on_change:${call_on_change}`);
-            //         }
-            //         //
-            //         // console.log(`applyModel - input - _hc:force_apply:${el['_hc:force_apply']}`);
-            //         if (!call_on_change && el['_hc:force_apply']) {
-            //             call_on_change = true;
-            //             delete el['_hc:force_apply'];
-            //         }
-            //         //
-            //         call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
-            //         // if (call_on_change) {
-            //         //     call(hc['attr']['change']);
-            //         // }
-            //     }
-            //     else if ((el as HTMLElement).tagName === 'SELECT' && self._toi_select.indexOf((el as HTMLInputElement).type) > -1) {
-            //         let call_on_change = false;
-            //         // console.log(`applyModel - select`);
-            //         const groups = (el as HTMLInputElement).querySelectorAll(`option`);
-            //         const changed = self.setSelectedValue(groups, fnRes);
-            //         // console.log(`applyModel - select - groups:${groups} / ${groups.length}`);
-            //         // console.log(`applyModel - select - changed:${changed}`);
-            //         //
-            //         call_on_change = hc['attr']['change'] && changed;
-            //         // console.log(`applyModel - select - call_on_change:${call_on_change}`);
-            //         //
-            //         // console.log(`applyModel - select - _hc:force_apply:${el['_hc:force_apply']}`);
-            //         if (!call_on_change && el['_hc:force_apply']) {
-            //             call_on_change = true;
-            //             delete el['_hc:force_apply'];
-            //         }
-            //         //
-            //         call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
-            //         // if (call_on_change) {
-            //         //     call(hc['attr']['change']);
-            //         // }
-            //     }
-            //     else if (['INPUT', 'TEXTAREA'].indexOf((el as HTMLElement).tagName) > -1 && self._toi_input.indexOf((el as HTMLInputElement).type) > -1) {
-            //         let call_on_input = false;
-            //         // console.log(`applyModel - input2 - tagName:${(el as HTMLElement).tagName} - value = ${(el as HTMLInputElement).value} / ${fnRes}`);
-            //         const changed = (el as HTMLInputElement).value != fnRes;
-            //         // console.log(`applyModel - input2 - tagName:${(el as HTMLElement).tagName} - changed:${changed}`);
-            //         (el as HTMLInputElement).value = fnRes;
-            //         //
-            //         call_on_input = hc['attr']['input'] && changed;
-            //         // console.log(`applyModel - input2 - tagName:${(el as HTMLElement).tagName} - call_on_input:${call_on_input}`);
-            //         //
-            //         // console.log(`applyModel - input2 - _hc:force_apply:${el['_hc:force_apply']}`);
-            //         if (!call_on_input && el['_hc:force_apply']) {
-            //             call_on_input = true;
-            //             delete el['_hc:force_apply'];
-            //         }
-            //         //
-            //         call_on_input && hc['attr']['input'] && call(hc['attr']['input']);
-            //         // if (call_on_input) {
-            //         //     call(hc['attr']['input']);
-            //         // }
-            //     }
-            // }
-        // }
+    //         //     //
+    //         //     if ((el as HTMLElement).tagName === 'INPUT' && self._toi_check.indexOf((el as HTMLInputElement).type) > -1) {
+    //         //         let call_on_change = false;
+    //         //         const group_name = (el as HTMLElement).hasAttribute('name') ? (el as HTMLElement).getAttribute('name') : null;
+    //         //         // console.log(`applyModel - input - group_name:${group_name}${group_name ? ` / model_groups.indexOf:${model_groups.indexOf(group_name)}` : ''}`);
+    //         //         if (group_name) {
+    //         //             //
+    //         //             if (model_groups.indexOf(group_name) < 0) {
+    //         //                 model_groups.push(group_name);
+    //         //                 //
+    //         //                 const groups = self.el.querySelectorAll(`*[name=${group_name}]`);
+    //         //                 const changed = self.setCheckedValue(groups, fnRes);
+    //         //                 // console.log(`applyModel - input - group_name:${group_name} - groups:${groups} / ${groups.length}`);
+    //         //                 // console.log(`applyModel - input - group_name:${group_name} - changed:${changed}`);
+    //         //                 //
+    //         //                 call_on_change = hc['attr']['change'] && changed;
+    //         //                 // console.log(`applyModel - input - group_name:${group_name} - call_on_change:${call_on_change}`);
+    //         //             }
+    //         //         }
+    //         //         else {
+    //         //             const prev: boolean = (el as HTMLInputElement).checked;
+    //         //             // console.log(`applyModel - input - prev:${prev}`);
+    //         //             // console.log(`applyModel - input - checked:${(el as HTMLInputElement).checked} / value - ${(el as HTMLInputElement).value} / ${fnRes}`);
+    //         //             (el as HTMLInputElement).checked = (el as HTMLInputElement).value == fnRes;
+    //         //             //
+    //         //             call_on_change = (el as HTMLInputElement).checked != prev;
+    //         //             // console.log(`applyModel - input - call_on_change:${call_on_change}`);
+    //         //         }
+    //         //         //
+    //         //         // console.log(`applyModel - input - _hc:force_apply:${el['_hc:force_apply']}`);
+    //         //         if (!call_on_change && el['_hc:force_apply']) {
+    //         //             call_on_change = true;
+    //         //             delete el['_hc:force_apply'];
+    //         //         }
+    //         //         //
+    //         //         call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+    //         //         // if (call_on_change) {
+    //         //         //     call(hc['attr']['change']);
+    //         //         // }
+    //         //     }
+    //         //     else if ((el as HTMLElement).tagName === 'SELECT' && self._toi_select.indexOf((el as HTMLInputElement).type) > -1) {
+    //         //         let call_on_change = false;
+    //         //         // console.log(`applyModel - select`);
+    //         //         const groups = (el as HTMLInputElement).querySelectorAll(`option`);
+    //         //         const changed = self.setSelectedValue(groups, fnRes);
+    //         //         // console.log(`applyModel - select - groups:${groups} / ${groups.length}`);
+    //         //         // console.log(`applyModel - select - changed:${changed}`);
+    //         //         //
+    //         //         call_on_change = hc['attr']['change'] && changed;
+    //         //         // console.log(`applyModel - select - call_on_change:${call_on_change}`);
+    //         //         //
+    //         //         // console.log(`applyModel - select - _hc:force_apply:${el['_hc:force_apply']}`);
+    //         //         if (!call_on_change && el['_hc:force_apply']) {
+    //         //             call_on_change = true;
+    //         //             delete el['_hc:force_apply'];
+    //         //         }
+    //         //         //
+    //         //         call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+    //         //         // if (call_on_change) {
+    //         //         //     call(hc['attr']['change']);
+    //         //         // }
+    //         //     }
+    //         //     else if (['INPUT', 'TEXTAREA'].indexOf((el as HTMLElement).tagName) > -1 && self._toi_input.indexOf((el as HTMLInputElement).type) > -1) {
+    //         //         let call_on_input = false;
+    //         //         // console.log(`applyModel - input2 - tagName:${(el as HTMLElement).tagName} - value = ${(el as HTMLInputElement).value} / ${fnRes}`);
+    //         //         const changed = (el as HTMLInputElement).value != fnRes;
+    //         //         // console.log(`applyModel - input2 - tagName:${(el as HTMLElement).tagName} - changed:${changed}`);
+    //         //         (el as HTMLInputElement).value = fnRes;
+    //         //         //
+    //         //         call_on_input = hc['attr']['input'] && changed;
+    //         //         // console.log(`applyModel - input2 - tagName:${(el as HTMLElement).tagName} - call_on_input:${call_on_input}`);
+    //         //         //
+    //         //         // console.log(`applyModel - input2 - _hc:force_apply:${el['_hc:force_apply']}`);
+    //         //         if (!call_on_input && el['_hc:force_apply']) {
+    //         //             call_on_input = true;
+    //         //             delete el['_hc:force_apply'];
+    //         //         }
+    //         //         //
+    //         //         call_on_input && hc['attr']['input'] && call(hc['attr']['input']);
+    //         //         // if (call_on_input) {
+    //         //         //     call(hc['attr']['input']);
+    //         //         // }
+    //         //     }
+    //         // }
+    //     // }
+    // }
+
+    private initModel() {
+        this.procModel(null, null, null, true);
     }
 
-    private procModel(node: Node|NodeList|Node[], root: Node = null, model_groups: string[]|null = null): void {
+    private procModel(node: Node|NodeList|Node[]|null = null, root: Node = null, model_groups: string[]|null = null, is_init: boolean = false): void {
+        // console.log(`procModel.St`);
 
         //
         const self: Hacci = this;
+
+        //
+        !node && (node = self._traces.elements);
 
         //
         const calcRes = function(val: string, opt_str: string = null): any {
-            // console.log(`procModel - calcRes - val:${val}`);
+            // console.log(`procModel - calcRes - val:${val} / opt_str:${opt_str}`);
             const fn = new Function(`${self._txts_mstr}${opt_str ? opt_str : ''}return ${val};`);
             let fnRes = fn.apply(self);
             typeof(fnRes) === 'function' && (fnRes = fnRes());
@@ -1016,6 +1034,7 @@ class Hacci {
         }
         //
         const call = function(val: string): any {
+            // console.log(`procModel - call - val:${val}`);
             let exec = val;
             if (val.indexOf('(') < 0) {
                 exec += '()';
@@ -1032,7 +1051,7 @@ class Hacci {
             !model_groups && (model_groups = []);
             //
             for (let cnti: number = 0; cnti < node.length; cnti++) {
-                self.procModel(node[cnti], root, model_groups);
+                self.procModel(node[cnti], root, model_groups, is_init);
             }
             //
             return;
@@ -1119,26 +1138,28 @@ class Hacci {
                         // console.log(`applyModel - input - group_name:${group_name} - changed:${changed}`);
                         //
                         call_on_change = hc['attr']['change'] && changed;
-                        // console.log(`applyModel - input - group_name:${group_name} - call_on_change:${call_on_change}`);
+                        // console.log(`procModel - input - group_name:${group_name} - call_on_change.#1:${call_on_change}`);
                     }
                 }
                 else {
                     const prev: boolean = (node as HTMLInputElement).checked;
                     // console.log(`applyModel - input - prev:${prev}`);
-                    // console.log(`applyModel - input - checked:${(el as HTMLInputElement).checked} / value - ${(el as HTMLInputElement).value} / ${fnRes}`);
+                    // console.log(`applyModel - input - checked:${(node as HTMLInputElement).checked} / value - ${(node as HTMLInputElement).value} / ${fnRes}`);
                     (node as HTMLInputElement).checked = (node as HTMLInputElement).value == fnRes;
                     //
                     call_on_change = (node as HTMLInputElement).checked != prev;
-                    // console.log(`applyModel - input - call_on_change:${call_on_change}`);
+                    // console.log(`applyModel - input - call_on_change.#2:${call_on_change}`);
                 }
                 //
-                // console.log(`applyModel - input - _hc:force_apply:${el['_hc:force_apply']}`);
+                // console.log(`procModel - input - call_on_change.#3:${call_on_change} / _hc:force_apply:${node['_hc:force_apply']}`);
                 if (!call_on_change && node['_hc:force_apply']) {
                     call_on_change = true;
                     delete node['_hc:force_apply'];
                 }
                 //
-                call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+                // console.log(`procModel - input - call_on_change.#4:${call_on_change} / is_init:${is_init}`);
+                // console.log(`procModel - input - call.#1:${hc['attr']['change']}`);
+                !is_init && call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
                 // if (call_on_change) {
                 //     call(hc['attr']['change']);
                 // }
@@ -1160,7 +1181,7 @@ class Hacci {
                     delete node['_hc:force_apply'];
                 }
                 //
-                call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
+                !is_init && call_on_change && hc['attr']['change'] && call(hc['attr']['change']);
                 // if (call_on_change) {
                 //     call(hc['attr']['change']);
                 // }
@@ -1181,12 +1202,13 @@ class Hacci {
                     delete node['_hc:force_apply'];
                 }
                 //
-                call_on_input && hc['attr']['input'] && call(hc['attr']['input']);
+                !is_init && call_on_input && hc['attr']['input'] && call(hc['attr']['input']);
                 // if (call_on_input) {
                 //     call(hc['attr']['input']);
                 // }
             }
         }
+        // console.log(`procModel.Ed`);
     }
 
     /**
@@ -1230,6 +1252,7 @@ class Hacci {
         const self: Hacci = this;
         //
         const call = function(evt: Event, val: string): any {
+            // console.log(`registEventListener - call - val:${val}`);
             //
             let exec = val;
             if (val.indexOf('(') < 0) {
@@ -1551,14 +1574,15 @@ class Hacci {
      * @param value 
      */
     private setCheckedValue(groups: NodeListOf<Element>, value: any[]|any): boolean {
+        // console.log(`setCheckedValue - groups:${(groups[0] as HTMLInputElement).name} / value:${value}`);
         //
         let rtn_val = false; // 변경 여부 반환
         //
-        let has_checked = false;
+        // let has_checked = false;
         for (let cntk: number = 0; cntk < groups.length; cntk++) {
             const item: HTMLInputElement = groups[cntk] as HTMLInputElement;
             //
-            !has_checked && item.checked && (has_checked = true);
+            // !has_checked && item.checked && (has_checked = true);
             //
             !rtn_val && 
                 (
@@ -1580,6 +1604,7 @@ class Hacci {
             // console.log(`setCheckedValue.proc - item.value:${item.value} / item.checked:${item.checked} / value:${JSON.stringify(value)} / rtn_val:${rtn_val}`);
             if (rtn_val) break;
         }
+        // console.log(`setCheckedValue - rtn_val.#1:${rtn_val}`);
         // !has_checked && !rtn_val && (rtn_val = true);
         // console.log(`setCheckedValue.proc - has_checked:${has_checked} / rtn_val:${rtn_val}`);
         //
@@ -1590,6 +1615,7 @@ class Hacci {
                 (value.indexOf(item.value) > -1) :
                 (value == item.value);
         }
+        // console.log(`setCheckedValue - rtn_val.#2:${rtn_val}`);
         //
         return rtn_val;
     }
