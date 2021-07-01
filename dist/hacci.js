@@ -141,12 +141,14 @@ var Hacci = (function () {
                         for_comment: null,
                         for_elements: [],
                         for_txts: [],
+                        for_model: null,
                         model_str: null,
                     });
                     obj['_hc'].attr['for'] = attr.value;
                     obj['_hc'].for_comment = forComment;
                     var model_str = String(obj['_hc'].attr.for).replace(/(\(.*\)|.+)\s+(in)\s+/g, '').replace(/\s/g, '');
                     var model = calcRes(model_str);
+                    obj['_hc'].for_model = model;
                     Array.isArray(model) && self.arrayEventListener(model);
                 }
             }
@@ -297,20 +299,21 @@ var Hacci = (function () {
         if (prev_model_prop === void 0) { prev_model_prop = null; }
         var self = this;
         if (!self._traces.model.listen) {
-            self._traces.model.listen = function () {
+            self._traces.model.listen = function (prop, model) {
                 self.procModel();
-                self.procForModel();
+                Array.isArray(model) && self.procForModel(model);
             };
         }
         if (!self._traces.model.listen_array) {
-            self._traces.model.listen_array = function (action) {
+            self._traces.model.listen_array = function (model, action) {
+                if (model === void 0) { model = null; }
                 if (action === void 0) { action = null; }
                 var args = [];
-                for (var _i = 1; _i < arguments.length; _i++) {
-                    args[_i - 1] = arguments[_i];
+                for (var _i = 2; _i < arguments.length; _i++) {
+                    args[_i - 2] = arguments[_i];
                 }
                 self.procModel();
-                self.procForModel.apply(self, [action].concat(args));
+                self.procForModel.apply(self, [model, action].concat(args));
             };
         }
         !parent && (parent = self);
@@ -339,27 +342,24 @@ var Hacci = (function () {
             }
         }
     };
-    Hacci.prototype.procForModel = function (action) {
+    Hacci.prototype.procForModel = function (src_model, action) {
+        if (src_model === void 0) { src_model = null; }
         if (action === void 0) { action = null; }
         var args = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            args[_i - 1] = arguments[_i];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            args[_i - 2] = arguments[_i];
         }
         var _a;
-        console.log("procForModel - action:" + action + " / args:" + JSON.stringify(args));
         var self = this;
-        var calcRes = function (val) {
-            var fn = new Function(self._txts_mstr + "return " + val + ";");
-            var fnRes = fn.apply(self);
-            typeof (fnRes) === 'function' && (fnRes = fnRes());
-            return fnRes;
-        };
         for (var cnti = 0; cnti < self._traces.fors.length; cnti++) {
             var el = self._traces.fors[cnti];
             var hc = el['_hc'];
+            if (src_model && src_model !== hc.for_model) {
+                continue;
+            }
             var model_str = String(hc.attr.for).replace(/(\(.*\)|.+)\s+(in)\s+/g, '').replace(/\s/g, '');
             var data_str = String(hc.attr.for).replace(/\s+in\s+.*$/, '').replace(/\s/g, '');
-            var model = calcRes(model_str);
+            var model = hc.for_model;
             var parentNode = hc.for_comment.parentNode;
             delete hc.for_txts;
             hc.for_txts = [];
@@ -599,7 +599,7 @@ var Hacci = (function () {
             }
             var _a, _b;
             var rtn_val = (_a = Array.prototype.push).call.apply(_a, [target].concat(args));
-            (_b = self._traces.model).listen_array.apply(_b, ['push'].concat(args));
+            (_b = self._traces.model).listen_array.apply(_b, [target, 'push'].concat(args));
             return rtn_val;
         },
             target.pop = function () {
@@ -609,7 +609,7 @@ var Hacci = (function () {
                 }
                 var _a, _b;
                 var rtn_val = (_a = Array.prototype.pop).call.apply(_a, [target].concat(args));
-                (_b = self._traces.model).listen_array.apply(_b, ['pop'].concat(args));
+                (_b = self._traces.model).listen_array.apply(_b, [target, 'pop'].concat(args));
                 return rtn_val;
             },
             target.splice = function () {
@@ -619,7 +619,7 @@ var Hacci = (function () {
                 }
                 var _a, _b;
                 var rtn_val = (_a = Array.prototype.splice).call.apply(_a, [target].concat(args));
-                (_b = self._traces.model).listen_array.apply(_b, ['splice'].concat(args));
+                (_b = self._traces.model).listen_array.apply(_b, [target, 'splice'].concat(args));
                 return rtn_val;
             },
             target.shift = function () {

@@ -228,6 +228,7 @@ class Hacci {
                             for_comment: null, // for 확인용 Comment
                             for_elements: [], // for 로 생성된 Element[]
                             for_txts: [], // for 로 생성된 txt[]
+                            for_model: null, // for 용 model
                             model_str: null, // Element 전용 model string
                         }
                     );
@@ -243,6 +244,11 @@ class Hacci {
                     // console.log(`procForModel - fors.#${idx} - data_str.#1:${data_str}`);
                     //
                     const model: any = calcRes(model_str);
+
+                    //
+                    obj['_hc'].for_model = model;
+
+                    //
                     Array.isArray(model) && self.arrayEventListener(model);
                 }
             }
@@ -667,24 +673,24 @@ class Hacci {
         const self: Hacci = this;
         //
         if (!self._traces.model.listen) {
-            self._traces.model.listen = function() {
+            self._traces.model.listen = function(prop: string, model: any) {
                 // console.log(`redefineModel - listen`);
                 // self.applyModel();
                 self.procModel();
                 //
                 // self.procForNodes();
-                self.procForModel();
+                Array.isArray(model) && self.procForModel(model);
             };
         }
         //
         if (!self._traces.model.listen_array) {
-            self._traces.model.listen_array = function(action: string = null, ...args) {
+            self._traces.model.listen_array = function(model: any = null, action: string = null, ...args) {
                 // console.log(`redefineModel - listen`);
                 // self.applyModel();
                 self.procModel();
                 //
                 // self.procForNodes();
-                self.procForModel(action, ...args);
+                self.procForModel(model, action, ...args);
             };
         }
         //
@@ -741,18 +747,19 @@ class Hacci {
     }
 
     //
-    private procForModel(action: string = null, ...args: any[]): void {
-        console.log(`procForModel - action:${action} / args:${JSON.stringify(args)}`);
+    private procForModel(src_model: any = null, action: string = null, ...args: any[]): void {
+        // console.log(`procForModel - src_model:${src_model} / action:${action} / args:${JSON.stringify(args)}`);
+        // console.log(src_model);
         //
         const self: Hacci = this;
         //
-        const calcRes = function(val: string): any {
-            // console.log(`applyModel - calcRes - val:${val}`);
-            const fn = new Function(`${self._txts_mstr}return ${val};`);
-            let fnRes = fn.apply(self);
-            typeof(fnRes) === 'function' && (fnRes = fnRes());
-            return fnRes;
-        }
+        // const calcRes = function(val: string): any {
+        //     // console.log(`applyModel - calcRes - val:${val}`);
+        //     const fn = new Function(`${self._txts_mstr}return ${val};`);
+        //     let fnRes = fn.apply(self);
+        //     typeof(fnRes) === 'function' && (fnRes = fnRes());
+        //     return fnRes;
+        // }
         //
         // console.log(`procForModel - fors.length:${self._traces.fors.length}`);
         // let idx: number = 0;
@@ -763,7 +770,20 @@ class Hacci {
             const el: Node = self._traces.fors[cnti];
             // console.log(`procForModel - fors.#${idx} - el:->`);
             // console.log(el);
+
+            //
             const hc = el['_hc'];
+            
+            //
+            // if (src_model) {
+            //     console.log(`procForModel - match:${src_model === hc.for_model}`);
+            //     console.log(src_model);
+            //     console.log(hc.for_model);
+            // }
+            if (src_model && src_model !== hc.for_model) {
+                // console.log(`procForModel - source not matched`);
+                continue;
+            }
             //
             // const html = (el as HTMLElement).outerHTML;
             // console.log(`procForModel - fors.#${idx} - html:${html}`);
@@ -773,7 +793,8 @@ class Hacci {
             // console.log(`procForModel - fors.#${idx} - model_str:${model_str}`);
             // console.log(`procForModel - fors.#${idx} - data_str.#1:${data_str}`);
             //
-            const model: any = calcRes(model_str);
+            const model: any = hc.for_model
+            // const model: any = calcRes(model_str);
             // console.log(`procForModel - fors.#${idx} - model:->`);
             // console.log(model);
 
@@ -1383,31 +1404,31 @@ class Hacci {
         target.push = function(...args): number {
             const rtn_val: number = Array.prototype.push.call(target, ...args);
             // self._traces.model.listen();
-            self._traces.model.listen_array('push', ...args);
+            self._traces.model.listen_array(target, 'push', ...args);
             return rtn_val;
         },
         target.pop = function(...args): any {
             const rtn_val: any = Array.prototype.pop.call(target, ...args);
             // self._traces.model.listen();
-            self._traces.model.listen_array('pop', ...args);
+            self._traces.model.listen_array(target, 'pop', ...args);
             return rtn_val;
         },
         target.splice = function(...args): any[] {
             const rtn_val: any[] = Array.prototype.splice.call(target, ...args);
             // self._traces.model.listen();
-            self._traces.model.listen_array('splice', ...args);
+            self._traces.model.listen_array(target, 'splice', ...args);
             return rtn_val;
         },
         target.shift = function(...args): any {
             const rtn_val: any = Array.prototype.shift.call(target, ...args);
             self._traces.model.listen();
-            // self._traces.model.listen_array('shift', ...args);
+            // self._traces.model.listen_array(target, 'shift', ...args);
             return rtn_val;
         },
         target.unshift = function(...args): number {
             const rtn_val: number = Array.prototype.unshift.call(target, ...args);
             self._traces.model.listen();
-            // self._traces.model.listen_array('unshift', ...args);
+            // self._traces.model.listen_array(target, 'unshift', ...args);
             return rtn_val;
         }
     }

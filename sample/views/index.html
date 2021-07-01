@@ -64,7 +64,7 @@
                     </table>
                     <hr />
                     <table>
-                        <tr hc:for="(id, pwd, name) in list">
+                        <tr hc:for="(id, pwd, name) in list2">
                             <td hc:text="id"></td>
                             <td>{{ pwd }}</td>
                             <td hc:html="name"></td>
@@ -82,6 +82,10 @@
                         { id: 'id2', pwd: 'pwd2', name: '<p style="color:green;">name2</p>', }, 
                         { id: 'id3', pwd: 'pwd3', name: '<p style="color:tellow;">name3</p>', }, 
                         { id: 'id4', pwd: 'pwd4', name: '<p style="color:blue;">name4</p>', }, 
+                    ],
+                    list2: [
+                        { id: 'id1', pwd: 'pwd1', name: '<p style="color:red;">name1</p>', }, 
+                        { id: 'id2', pwd: 'pwd2', name: '<p style="color:green;">name2</p>', }, 
                     ],
                 },
                 method: {
