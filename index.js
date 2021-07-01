@@ -367,10 +367,14 @@ var Hacci = (function () {
             var rms = null;
             switch (action) {
                 case 'push':
+                case 'unshift':
                     rms = [];
                     break;
                 case 'pop':
                     rms = hc.for_elements.splice(hc.for_elements.length - 1, 1);
+                    break;
+                case 'shift':
+                    rms = hc.for_elements.splice(0, 1);
                     break;
                 case 'splice':
                     rms = (_a = hc.for_elements).splice.apply(_a, args);
@@ -425,7 +429,7 @@ var Hacci = (function () {
                         }
                     }
                     else if (action === 'unshift') {
-                        for (var cntk = args.length - 1; cntk > 0; cntk--) {
+                        for (var cntk = args.length - 1; cntk > -1; cntk--) {
                             var opt_str = '';
                             for (var cntki = 0; cntki < data_keys.length; cntki++) {
                                 opt_str += "var " + data_keys[cntki] + "=" + model_str + "[" + cntk + "]['" + data_keys[cntki] + "'];\n";
@@ -462,7 +466,7 @@ var Hacci = (function () {
                         }
                     }
                     else if (action === 'unshift') {
-                        for (var cntk = args.length - 1; cntk > 0; cntk--) {
+                        for (var cntk = args.length - 1; cntk > -1; cntk--) {
                             var opt_str = "var " + data_str + "=" + model_str + "[" + cntk + "];\n";
                             hc['model_str'] = opt_str;
                             var node = el.cloneNode(true);
@@ -627,9 +631,9 @@ var Hacci = (function () {
                 for (var _i = 0; _i < arguments.length; _i++) {
                     args[_i] = arguments[_i];
                 }
-                var _a;
+                var _a, _b;
                 var rtn_val = (_a = Array.prototype.shift).call.apply(_a, [target].concat(args));
-                self._traces.model.listen();
+                (_b = self._traces.model).listen_array.apply(_b, [target, 'shift'].concat(args));
                 return rtn_val;
             },
             target.unshift = function () {
@@ -637,9 +641,9 @@ var Hacci = (function () {
                 for (var _i = 0; _i < arguments.length; _i++) {
                     args[_i] = arguments[_i];
                 }
-                var _a;
+                var _a, _b;
                 var rtn_val = (_a = Array.prototype.unshift).call.apply(_a, [target].concat(args));
-                self._traces.model.listen();
+                (_b = self._traces.model).listen_array.apply(_b, [target, 'unshift'].concat(args));
                 return rtn_val;
             };
     };

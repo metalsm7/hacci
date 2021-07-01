@@ -812,15 +812,15 @@ class Hacci {
             let rms: any = null
             switch (action) {
                 case 'push':
-                // case 'unshift':
+                case 'unshift':
                     rms = [];
                     break;
                 case 'pop':
                     rms = hc.for_elements.splice(hc.for_elements.length - 1, 1);
                     break;
-                // case 'shift':
-                //     rms = hc.for_elements.splice(0, 1);
-                //     break;
+                case 'shift':
+                    rms = hc.for_elements.splice(0, 1);
+                    break;
                 case 'splice':
                     rms = hc.for_elements.splice(...args);
                     break;
@@ -922,7 +922,8 @@ class Hacci {
                         }
                     }
                     else if (action === 'unshift') {
-                        for (let cntk: number = args.length - 1; cntk > 0; cntk--) {
+                        // console.log(`procForModel - action:${action}`);
+                        for (let cntk: number = args.length - 1; cntk > -1; cntk--) {
                             //
                             let opt_str: string = '';
                             for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
@@ -982,7 +983,7 @@ class Hacci {
                         }
                     }
                     else if (action === 'unshift') {
-                        for (let cntk: number = args.length - 1; cntk > 0; cntk--) {
+                        for (let cntk: number = args.length - 1; cntk > -1; cntk--) {
                             //
                             let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
                             hc['model_str'] = opt_str;
@@ -1421,14 +1422,14 @@ class Hacci {
         },
         target.shift = function(...args): any {
             const rtn_val: any = Array.prototype.shift.call(target, ...args);
-            self._traces.model.listen();
-            // self._traces.model.listen_array(target, 'shift', ...args);
+            // self._traces.model.listen();
+            self._traces.model.listen_array(target, 'shift', ...args);
             return rtn_val;
         },
         target.unshift = function(...args): number {
             const rtn_val: number = Array.prototype.unshift.call(target, ...args);
-            self._traces.model.listen();
-            // self._traces.model.listen_array(target, 'unshift', ...args);
+            // self._traces.model.listen();
+            self._traces.model.listen_array(target, 'unshift', ...args);
             return rtn_val;
         }
     }
