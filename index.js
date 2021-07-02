@@ -422,6 +422,8 @@ var Hacci = (function () {
                 parentNode.removeChild(hc.for_elements[0]);
                 hc.for_elements.splice(0, 1);
             }
+            if (action && ['pop', 'shift'].indexOf(action) > -1)
+                continue;
             if (action && action === '_replace') {
                 for (var cntk = 0; cntk < model.length; cntk++) {
                     if (model[cntk] !== args[0])

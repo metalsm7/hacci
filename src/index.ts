@@ -907,6 +907,8 @@ class Hacci {
             //     return;
             // }
 
+            if (action && ['pop', 'shift'].indexOf(action) > -1) continue;
+
             if (action && action === '_replace') {
                 // console.log(`procForModel - _replace`);
                 for (let cntk: number = 0; cntk < model.length; cntk++) {
