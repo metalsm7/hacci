@@ -399,7 +399,6 @@ var Hacci = (function () {
             var rms = null;
             switch (action) {
                 case 'push':
-                case 'unshift':
                     rms = [];
                     break;
                 case 'pop':
@@ -407,9 +406,6 @@ var Hacci = (function () {
                     break;
                 case 'shift':
                     rms = hc.for_elements.splice(0, 1);
-                    break;
-                case 'splice':
-                    rms = hc.for_elements.splice(args[0] ? args[0] : null, args[1] ? args[1] : null);
                     break;
                 default:
                     clear = model.length < 1;
@@ -442,33 +438,9 @@ var Hacci = (function () {
                 for (var cntk = model.length - args.length; cntk < model.length; cntk++) {
                     hc['model_str'] = getModelStr(hc.attr.for, cntk);
                     var node = el.cloneNode(true);
+                    procs(node, el);
                     parentNode.appendChild(node);
                     hc.for_elements.push(node);
-                    procs(node, el);
-                }
-            }
-            else if (action && action === 'unshift') {
-                for (var cntk = args.length - 1; cntk > -1; cntk--) {
-                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
-                    var node = el.cloneNode(true);
-                    parentNode.insertBefore(node, hc.for_elements[0]);
-                    hc.for_elements.unshift(node);
-                    procs(node, el);
-                }
-            }
-            else if (action && action === 'splice') {
-                var insert_idx = args[0];
-                for (var cntk = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
-                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
-                    var node = el.cloneNode(true);
-                    if (hc.for_elements.length <= cntk) {
-                        parentNode.appendChild(node);
-                    }
-                    else {
-                        parentNode.insertBefore(node, hc.for_elements[cntk]);
-                    }
-                    hc.for_elements.splice(cntk, 0, node);
-                    procs(node, el);
                 }
             }
             else {
@@ -719,7 +691,7 @@ var Hacci = (function () {
                 }
                 var _a, _b;
                 var rtn_val = (_a = Array.prototype.unshift).call.apply(_a, [target].concat(args));
-                (_b = self._traces.model).listen_array.apply(_b, [target, 'unshift'].concat(args));
+                (_b = self._traces.model).listen_array.apply(_b, [target, 'splice', 0, 0].concat(args));
                 return rtn_val;
             };
     };
