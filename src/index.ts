@@ -735,8 +735,9 @@ class Hacci {
                             const props_model: any = model[props_str];
                             //
                             if (!Array.isArray(props_model)) continue;
+                            // console.log(`defineProperty - props_str:${props_str} / is array:${Array.isArray(props_model)}`);
                             //
-                            self.procForModel(props_model, '_replace', cnti);
+                            self.procForModel(props_model, '_replace', model[`${props_str}.${props[cnti + 1]}`]);
                         }
                     }
 
@@ -907,20 +908,29 @@ class Hacci {
             // }
 
             if (action && action === '_replace') {
-                const idx: number = args[0];
-                //
-                hc['model_str'] = getModelStr(hc.attr.for, idx);
-                // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+                // console.log(`procForModel - _replace`);
+                for (let cntk: number = 0; cntk < model.length; cntk++) {
 
-                //
-                const node: Node = (el as HTMLElement).cloneNode(true);
-                parentNode.insertBefore(node, hc.for_elements[idx]);
-                parentNode.removeChild(hc.for_elements[idx]);
-                //
-                hc.for_elements.splice(idx, 1, node);
+                    // console.log(`procForModel - _replace - model check:${JSON.stringify(model[cntk])}`);
+                    // console.log(`procForModel - _replace - model check:${JSON.stringify(args[0])}`);
+                    if (model[cntk] !== args[0]) continue;
+                    // console.log(`procForModel - _replace - model exists:${(model[cntk] === args[0])}`);
+                    //
+                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                    // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
 
-                //
-                procs(node, el);
+                    //
+                    const newNode: Node = (el as HTMLElement).cloneNode(true);
+                    //
+                    procs(newNode, el);
+
+                    //
+                    parentNode.insertBefore(newNode, hc.for_elements[cntk]);
+                    parentNode.removeChild(hc.for_elements[cntk]);
+
+                    //
+                    hc.for_elements[cntk] = newNode;
+                }
             }
             else if (action && action === 'push') {
                 for (let cntk: number = model.length - args.length; cntk < model.length; cntk++) {
