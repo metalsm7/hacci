@@ -721,9 +721,25 @@ class Hacci {
                     //
                     model[model_prop] = value;
                     //
-                    Array.isArray(model[model_prop]) && self.arrayEventListener(model[model_prop]);
+                    const is_array: boolean = Array.isArray(model[model_prop]);
+                    is_array && self.arrayEventListener(model[model_prop]);
                     //
                     self._traces.model.listen(model_prop, model[model_prop]);
+                    //
+                    if (!is_array) {
+                        // 해당 모델의 상위로 올라가는 중 배열 모델이 있으면 -> 해당 모델에 대한 listen 처리
+                        const props: string[] = model_prop.split('.');
+                        let props_str: string = '';
+                        for (let cnti: number = 0; cnti < props.length; cnti++) {
+                            props_str += `${cnti > 0 ? '.' : ''}${props[cnti]}`;
+                            //
+                            if (Array.isArray(model[props_str])) {
+                                self._traces.model.listen_array(model[props_str]);
+                                break;
+                            }
+                        }
+                    }
+
                     // 모델 변경시 text 변경 처리용
                     self.applyTextChange();
                 }
@@ -766,6 +782,43 @@ class Hacci {
         for (let cnti: number = 0; cnti < self._traces.fors.length; cnti++) {
             // idx++;
             // console.log(`procForModel - fors.#${idx}/${self._traces.fors.length}`);
+
+            //
+            const getModelStr = function(attr: string, row_idx: number) {
+                //
+                let rtn_val: string = '';
+                //
+                const model_str = String(attr).replace(/(\(.*\)|.+)\s+(in)\s+/g, '').replace(/\s/g, '');
+                const data_str = String(attr).replace(/\s+in\s+.*$/, '').replace(/\s/g, '');
+                //
+                if (data_str.charAt(0) === '(') {
+                    const data_keys: string[] = data_str.substring(1, data_str.length - 1).split(',');
+                    for (let cnti: number = 0; cnti < data_keys.length; cnti++) {
+                        rtn_val += `var ${data_keys[cnti]}=${model_str}[${row_idx}]['${data_keys[cnti]}'];\n`;
+                    }
+                }
+                else {
+                    rtn_val = `var ${data_str}=${model_str}[${row_idx}];\n`;
+                }
+                //
+                return rtn_val;
+            };
+
+            //
+            const procs = function(node: Node, el: Node) {
+                //
+                self.procNode(node, el);
+                self.procNode((node as Element).querySelectorAll('*'), el);
+                
+                //
+                self.procTextNode(node, el);
+                self.procTextModel(el);
+
+                //
+                self.procModel(node, el);
+                self.procModel((node as Element).querySelectorAll('*'), el);
+            };
+
             //
             const el: Node = self._traces.fors[cnti];
             // console.log(`procForModel - fors.#${idx} - el:->`);
@@ -788,8 +841,8 @@ class Hacci {
             // const html = (el as HTMLElement).outerHTML;
             // console.log(`procForModel - fors.#${idx} - html:${html}`);
             //
-            const model_str = String(hc.attr.for).replace(/(\(.*\)|.+)\s+(in)\s+/g, '').replace(/\s/g, '');
-            const data_str = String(hc.attr.for).replace(/\s+in\s+.*$/, '').replace(/\s/g, '');
+            // const model_str = String(hc.attr.for).replace(/(\(.*\)|.+)\s+(in)\s+/g, '').replace(/\s/g, '');
+            // const data_str = String(hc.attr.for).replace(/\s+in\s+.*$/, '').replace(/\s/g, '');
             // console.log(`procForModel - fors.#${idx} - model_str:${model_str}`);
             // console.log(`procForModel - fors.#${idx} - data_str.#1:${data_str}`);
             //
@@ -824,6 +877,10 @@ class Hacci {
                 case 'splice':
                     rms = hc.for_elements.splice(args[0] ? args[0] : null, args[1] ? args[1] : null);
                     break;
+                default:
+                    // action 없이 들어오는 경우 중 model 갯수가 0이면 clear 처리
+                    clear = model.length < 1;
+                    break;
             }
             if (rms) {
                 //
@@ -841,6 +898,204 @@ class Hacci {
                 hc.for_elements.splice(0, 1);
             }
 
+            // clear 아님 & action 없음 -> 개별건에 대해 update 및 삭제, 추가 처리 진행
+            // if (!clear && !action) {
+            //     //
+
+            //     //
+            //     return;
+            // }
+
+            if (action && action === 'push') {
+                for (let cntk: number = model.length - args.length; cntk < model.length; cntk++) {
+                    //
+                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                    // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+
+                    //
+                    const node: Node = (el as HTMLElement).cloneNode(true);
+                    parentNode.appendChild(node);
+                    //
+                    hc.for_elements.push(node);
+
+                    //
+                    procs(node, el);
+                }
+            }
+            else if (action && action === 'unshift') {
+                for (let cntk: number = args.length - 1; cntk > -1; cntk--) {
+                    //
+                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                    // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+
+                    //
+                    const node: Node = (el as HTMLElement).cloneNode(true);
+                    parentNode.insertBefore(node, hc.for_elements[0]);
+                    //
+                    hc.for_elements.unshift(node);
+
+                    //
+                    procs(node, el);
+                }
+            }
+            else if (action && action === 'splice') {
+                // insert index check
+                const insert_idx: number = args[0];
+                // console.log(`procForModel - action:${action}`);
+                for (let cntk: number = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
+                    //
+                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                    // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+
+                    //
+                    const node: Node = (el as HTMLElement).cloneNode(true);
+                    if (hc.for_elements.length <= cntk) {
+                        parentNode.appendChild(node);
+                    }
+                    else {
+                        parentNode.insertBefore(node, hc.for_elements[cntk]);
+                    }
+                    //
+                    hc.for_elements.splice(cntk, 0, node);
+
+                    //
+                    procs(node, el);
+                }
+            }
+            else {
+                //
+                for (let cntk: number = 0; cntk < model.length; cntk++) {
+                    //
+                    let node: Node = null;
+                    try { node = hc.for_elements[cntk]; } catch (e) {}
+                    //
+                    // console.log(`procForModel - node:${node}`);
+                    //
+                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                    // console.log(`procForModel - model_str:${hc['model_str']}`);
+                    // console.log(`procForModel - model[${cntk}]:${JSON.stringify(model[cntk])}`);
+                    //
+                    if (typeof(node) === 'undefined') {
+                        //
+                        node = (el as HTMLElement).cloneNode(true);
+                        // !node['_hc:for'] && (node['_hc:for'] = { model: model[cntk], });
+                        //
+                        const len: number = hc.for_elements.length;
+                        if (len > 0 && hc.for_elements[len - 1].nextElementSibling) {
+                            parentNode.insertBefore(node, hc.for_elements[len - 1].nextElementSibling);
+                        }
+                        else {
+                            parentNode.appendChild(node);
+                        }
+                        //
+                        hc.for_elements.push(node);
+                        //
+                        procs(node, el);
+                    }
+                    else {
+                        //
+                        const newNode = (el as HTMLElement).cloneNode(true);
+                        // !node['_hc:for'] && (node['_hc:for'] = { model: model[cntk], });
+                        //
+                        procs(newNode, el);
+    
+                        //
+                        hc.for_elements[cntk] = newNode;
+    
+                        //
+                        parentNode.insertBefore(newNode, node);
+                        parentNode.removeChild(node);
+                    }
+                }
+            }
+            continue;
+
+
+            //
+            if (clear) {
+                //
+                for (let cntk: number = 0; cntk < model.length; cntk++) {
+                    //
+                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                    // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+
+                    //
+                    const node: Node = (el as HTMLElement).cloneNode(true);
+                    !node['_hc:for'] && (node['_hc:for'] = {});
+                    node['_hc:for'] && (node['_hc:for']['model'] = model[cntk]);
+                    parentNode.appendChild(node);
+                    //
+                    hc.for_elements.push(node);
+                    //
+                    procs(node, el);
+                }
+            }
+            else {
+                if (action === 'push') {
+                    for (let cntk: number = model.length - args.length; cntk < model.length; cntk++) {
+                        //
+                        hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                        // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+    
+                        //
+                        const node: Node = (el as HTMLElement).cloneNode(true);
+                        !node['_hc:for'] && (node['_hc:for'] = {});
+                        node['_hc:for'] && (node['_hc:for']['model'] = model[cntk]);
+                        parentNode.appendChild(node);
+                        //
+                        hc.for_elements.push(node);
+    
+                        //
+                        procs(node, el);
+                    }
+                }
+                else if (action === 'unshift') {
+                    // console.log(`procForModel - action:${action}`);
+                    for (let cntk: number = args.length - 1; cntk > -1; cntk--) {
+                        //
+                        hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                        // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+    
+                        //
+                        const node: Node = (el as HTMLElement).cloneNode(true);
+                        !node['_hc:for'] && (node['_hc:for'] = {});
+                        node['_hc:for'] && (node['_hc:for']['model'] = model[cntk]);
+                        parentNode.insertBefore(node, hc.for_elements[0]);
+                        //
+                        hc.for_elements.unshift(node);
+    
+                        //
+                        procs(node, el);
+                    }
+                }
+                else if (action === 'splice' && args.length > 2) {
+                    // insert index check
+                    const insert_idx: number = args[0];
+                    // console.log(`procForModel - action:${action}`);
+                    for (let cntk: number = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
+                        //
+                        hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                        // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+    
+                        //
+                        const node: Node = (el as HTMLElement).cloneNode(true);
+                        !node['_hc:for'] && (node['_hc:for'] = {});
+                        node['_hc:for'] && (node['_hc:for']['model'] = model[cntk]);
+                        if (hc.for_elements.length <= cntk) {
+                            parentNode.appendChild(node);
+                        }
+                        else {
+                            parentNode.insertBefore(node, hc.for_elements[cntk]);
+                        }
+                        //
+                        hc.for_elements.splice(cntk, 0, node);
+    
+                        //
+                        procs(node, el);
+                    }
+                }
+            }
+
             //
             // console.log(`procForModel - for_elements:->`);
             // console.log(hc.for_elements);
@@ -856,204 +1111,189 @@ class Hacci {
             // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
 
             //
-            const procs = function(node: Node, el: Node) {
-                //
-                self.procNode(node, el);
-                self.procNode((node as Element).querySelectorAll('*'), el);
-                
-                //
-                self.procTextNode(node, el);
-                self.procTextModel(el);
+            // if (data_str.charAt(0) === '(') {
+            //     // (id, pwd, index) in rows 같이 정의된 경우 (괄호로 시작하는 경우)
 
-                //
-                self.procModel(node, el);
-                self.procModel((node as Element).querySelectorAll('*'), el);
-            };
+            //     //
+            //     const data_keys: string[] = data_str.substring(1, data_str.length - 1).split(',');
+            //     // console.log(`procForModel - fors.#${idx} - data_keys:${JSON.stringify(data_keys)}`);
 
-            //
-            if (data_str.charAt(0) === '(') {
-                // (id, pwd, index) in rows 같이 정의된 경우 (괄호로 시작하는 경우)
-
-                //
-                const data_keys: string[] = data_str.substring(1, data_str.length - 1).split(',');
-                // console.log(`procForModel - fors.#${idx} - data_keys:${JSON.stringify(data_keys)}`);
-
-                //
-                if (clear) {
-                    //
-                    for (let cntk: number = 0; cntk < model.length; cntk++) {
-                        //
-                        let opt_str: string = '';
-                        for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
-                            opt_str += `var ${data_keys[cntki]}=${model_str}[${cntk}]['${data_keys[cntki]}'];\n`;
-                        }
-                        hc['model_str'] = opt_str;
-                        // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+            //     //
+            //     if (clear) {
+            //         //
+            //         for (let cntk: number = 0; cntk < model.length; cntk++) {
+            //             //
+            //             let opt_str: string = '';
+            //             for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
+            //                 opt_str += `var ${data_keys[cntki]}=${model_str}[${cntk}]['${data_keys[cntki]}'];\n`;
+            //             }
+            //             hc['model_str'] = opt_str;
+            //             // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
     
-                        //
-                        const node: Node = (el as HTMLElement).cloneNode(true);
-                        parentNode.appendChild(node);
-                        //
-                        hc.for_elements.push(node);
+            //             //
+            //             const node: Node = (el as HTMLElement).cloneNode(true);
+            //             parentNode.appendChild(node);
+            //             //
+            //             hc.for_elements.push(node);
     
-                        //
-                        procs(node, el);
-                    }
-                }
-                else {
-                    if (action === 'push') {
-                        for (let cntk: number = model.length - args.length; cntk < model.length; cntk++) {
-                            //
-                            let opt_str: string = '';
-                            for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
-                                opt_str += `var ${data_keys[cntki]}=${model_str}[${cntk}]['${data_keys[cntki]}'];\n`;
-                            }
-                            hc['model_str'] = opt_str;
-                            // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+            //             //
+            //             procs(node, el);
+            //         }
+            //     }
+            //     else {
+            //         if (action === 'push') {
+            //             for (let cntk: number = model.length - args.length; cntk < model.length; cntk++) {
+            //                 //
+            //                 let opt_str: string = '';
+            //                 for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
+            //                     opt_str += `var ${data_keys[cntki]}=${model_str}[${cntk}]['${data_keys[cntki]}'];\n`;
+            //                 }
+            //                 hc['model_str'] = opt_str;
+            //                 // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
         
-                            //
-                            const node: Node = (el as HTMLElement).cloneNode(true);
-                            parentNode.appendChild(node);
-                            //
-                            hc.for_elements.push(node);
+            //                 //
+            //                 const node: Node = (el as HTMLElement).cloneNode(true);
+            //                 parentNode.appendChild(node);
+            //                 //
+            //                 hc.for_elements.push(node);
         
-                            //
-                            procs(node, el);
-                        }
-                    }
-                    else if (action === 'unshift') {
-                        // console.log(`procForModel - action:${action}`);
-                        for (let cntk: number = args.length - 1; cntk > -1; cntk--) {
-                            //
-                            let opt_str: string = '';
-                            for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
-                                opt_str += `var ${data_keys[cntki]}=${model_str}[${cntk}]['${data_keys[cntki]}'];\n`;
-                            }
-                            hc['model_str'] = opt_str;
-                            // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+            //                 //
+            //                 procs(node, el);
+            //             }
+            //         }
+            //         else if (action === 'unshift') {
+            //             // console.log(`procForModel - action:${action}`);
+            //             for (let cntk: number = args.length - 1; cntk > -1; cntk--) {
+            //                 //
+            //                 let opt_str: string = '';
+            //                 for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
+            //                     opt_str += `var ${data_keys[cntki]}=${model_str}[${cntk}]['${data_keys[cntki]}'];\n`;
+            //                 }
+            //                 hc['model_str'] = opt_str;
+            //                 // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
         
-                            //
-                            const node: Node = (el as HTMLElement).cloneNode(true);
-                            parentNode.insertBefore(node, hc.for_elements[0]);
-                            //
-                            hc.for_elements.unshift(node);
+            //                 //
+            //                 const node: Node = (el as HTMLElement).cloneNode(true);
+            //                 parentNode.insertBefore(node, hc.for_elements[0]);
+            //                 //
+            //                 hc.for_elements.unshift(node);
         
-                            //
-                            procs(node, el);
-                        }
-                    }
-                    else if (action === 'splice' && args.length > 2) {
-                        // insert index check
-                        const insert_idx: number = args[0];
-                        // console.log(`procForModel - action:${action}`);
-                        for (let cntk: number = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
-                            //
-                            let opt_str: string = '';
-                            for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
-                                opt_str += `var ${data_keys[cntki]}=${model_str}[${cntk}]['${data_keys[cntki]}'];\n`;
-                            }
-                            hc['model_str'] = opt_str;
-                            // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+            //                 //
+            //                 procs(node, el);
+            //             }
+            //         }
+            //         else if (action === 'splice' && args.length > 2) {
+            //             // insert index check
+            //             const insert_idx: number = args[0];
+            //             // console.log(`procForModel - action:${action}`);
+            //             for (let cntk: number = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
+            //                 //
+            //                 let opt_str: string = '';
+            //                 for (let cntki: number = 0; cntki < data_keys.length; cntki++) {
+            //                     opt_str += `var ${data_keys[cntki]}=${model_str}[${cntk}]['${data_keys[cntki]}'];\n`;
+            //                 }
+            //                 hc['model_str'] = opt_str;
+            //                 // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
         
-                            //
-                            const node: Node = (el as HTMLElement).cloneNode(true);
-                            if (hc.for_elements.length <= cntk) {
-                                parentNode.appendChild(node);
-                            }
-                            else {
-                                parentNode.insertBefore(node, hc.for_elements[cntk]);
-                            }
-                            //
-                            hc.for_elements.splice(cntk, 0, node);
+            //                 //
+            //                 const node: Node = (el as HTMLElement).cloneNode(true);
+            //                 if (hc.for_elements.length <= cntk) {
+            //                     parentNode.appendChild(node);
+            //                 }
+            //                 else {
+            //                     parentNode.insertBefore(node, hc.for_elements[cntk]);
+            //                 }
+            //                 //
+            //                 hc.for_elements.splice(cntk, 0, node);
         
-                            //
-                            procs(node, el);
-                        }
-                    }
-                }
-            }
-            else {
-                // row in rows 같이 정의된 경우
-                //
-                if (clear) {
-                    //
-                    for (let cntk: number = 0; cntk < model.length; cntk++) {
-                        //
-                        let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
-                        hc['model_str'] = opt_str;
+            //                 //
+            //                 procs(node, el);
+            //             }
+            //         }
+            //     }
+            // }
+            // else {
+            //     // row in rows 같이 정의된 경우
+            //     //
+            //     if (clear) {
+            //         //
+            //         for (let cntk: number = 0; cntk < model.length; cntk++) {
+            //             //
+            //             let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
+            //             hc['model_str'] = opt_str;
     
-                        //
-                        const node: Node = (el as HTMLElement).cloneNode(true);
-                        parentNode.appendChild(node);
-                        //
-                        hc.for_elements.push(node);
+            //             //
+            //             const node: Node = (el as HTMLElement).cloneNode(true);
+            //             parentNode.appendChild(node);
+            //             //
+            //             hc.for_elements.push(node);
     
-                        //
-                        procs(node, el);
-                    }
-                }
-                else {
-                    if (action === 'push') {
-                        for (let cntk: number = model.length - args.length; cntk < model.length; cntk++) {
-                            //
-                            let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
-                            hc['model_str'] = opt_str;
-                            // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+            //             //
+            //             procs(node, el);
+            //         }
+            //     }
+            //     else {
+            //         if (action === 'push') {
+            //             for (let cntk: number = model.length - args.length; cntk < model.length; cntk++) {
+            //                 //
+            //                 let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
+            //                 hc['model_str'] = opt_str;
+            //                 // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
         
-                            //
-                            const node: Node = (el as HTMLElement).cloneNode(true);
-                            parentNode.appendChild(node);
-                            //
-                            hc.for_elements.push(node);
+            //                 //
+            //                 const node: Node = (el as HTMLElement).cloneNode(true);
+            //                 parentNode.appendChild(node);
+            //                 //
+            //                 hc.for_elements.push(node);
         
-                            //
-                            procs(node, el);
-                        }
-                    }
-                    else if (action === 'unshift') {
-                        for (let cntk: number = args.length - 1; cntk > -1; cntk--) {
-                            //
-                            let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
-                            hc['model_str'] = opt_str;
-                            // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+            //                 //
+            //                 procs(node, el);
+            //             }
+            //         }
+            //         else if (action === 'unshift') {
+            //             for (let cntk: number = args.length - 1; cntk > -1; cntk--) {
+            //                 //
+            //                 let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
+            //                 hc['model_str'] = opt_str;
+            //                 // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
         
-                            //
-                            const node: Node = (el as HTMLElement).cloneNode(true);
-                            parentNode.insertBefore(node, hc.for_elements[0]);
-                            //
-                            hc.for_elements.unshift(node);
+            //                 //
+            //                 const node: Node = (el as HTMLElement).cloneNode(true);
+            //                 parentNode.insertBefore(node, hc.for_elements[0]);
+            //                 //
+            //                 hc.for_elements.unshift(node);
         
-                            //
-                            procs(node, el);
-                        }
-                    }
-                    else if (action === 'splice' && args.length > 2) {
-                        // insert index check
-                        const insert_idx: number = args[0];
-                        // console.log(`procForModel - action:${action}`);
-                        for (let cntk: number = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
-                            //
-                            let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
-                            hc['model_str'] = opt_str;
-                            // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+            //                 //
+            //                 procs(node, el);
+            //             }
+            //         }
+            //         else if (action === 'splice' && args.length > 2) {
+            //             // insert index check
+            //             const insert_idx: number = args[0];
+            //             // console.log(`procForModel - action:${action}`);
+            //             for (let cntk: number = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
+            //                 //
+            //                 let opt_str: string = `var ${data_str}=${model_str}[${cntk}];\n`;
+            //                 hc['model_str'] = opt_str;
+            //                 // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
         
-                            //
-                            const node: Node = (el as HTMLElement).cloneNode(true);
-                            if (hc.for_elements.length <= cntk) {
-                                parentNode.appendChild(node);
-                            }
-                            else {
-                                parentNode.insertBefore(node, hc.for_elements[cntk]);
-                            }
-                            //
-                            hc.for_elements.splice(cntk, 0, node);
+            //                 //
+            //                 const node: Node = (el as HTMLElement).cloneNode(true);
+            //                 if (hc.for_elements.length <= cntk) {
+            //                     parentNode.appendChild(node);
+            //                 }
+            //                 else {
+            //                     parentNode.insertBefore(node, hc.for_elements[cntk]);
+            //                 }
+            //                 //
+            //                 hc.for_elements.splice(cntk, 0, node);
         
-                            //
-                            procs(node, el);
-                        }
-                    }
-                }
-            }
+            //                 //
+            //                 procs(node, el);
+            //             }
+            //         }
+            //     }
+            // }
         }
     }
     

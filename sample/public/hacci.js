@@ -329,8 +329,20 @@ var Hacci = (function () {
             },
             set: function (value) {
                 model[model_prop] = value;
-                Array.isArray(model[model_prop]) && self.arrayEventListener(model[model_prop]);
+                var is_array = Array.isArray(model[model_prop]);
+                is_array && self.arrayEventListener(model[model_prop]);
                 self._traces.model.listen(model_prop, model[model_prop]);
+                if (!is_array) {
+                    var props = model_prop.split('.');
+                    var props_str = '';
+                    for (var cnti = 0; cnti < props.length; cnti++) {
+                        props_str += "" + (cnti > 0 ? '.' : '') + props[cnti];
+                        if (Array.isArray(model[props_str])) {
+                            self._traces.model.listen_array(model[props_str]);
+                            break;
+                        }
+                    }
+                }
                 self.applyTextChange();
             }
         });
@@ -351,13 +363,34 @@ var Hacci = (function () {
         }
         var self = this;
         for (var cnti = 0; cnti < self._traces.fors.length; cnti++) {
+            var getModelStr = function (attr, row_idx) {
+                var rtn_val = '';
+                var model_str = String(attr).replace(/(\(.*\)|.+)\s+(in)\s+/g, '').replace(/\s/g, '');
+                var data_str = String(attr).replace(/\s+in\s+.*$/, '').replace(/\s/g, '');
+                if (data_str.charAt(0) === '(') {
+                    var data_keys = data_str.substring(1, data_str.length - 1).split(',');
+                    for (var cnti_1 = 0; cnti_1 < data_keys.length; cnti_1++) {
+                        rtn_val += "var " + data_keys[cnti_1] + "=" + model_str + "[" + row_idx + "]['" + data_keys[cnti_1] + "'];\n";
+                    }
+                }
+                else {
+                    rtn_val = "var " + data_str + "=" + model_str + "[" + row_idx + "];\n";
+                }
+                return rtn_val;
+            };
+            var procs = function (node, el) {
+                self.procNode(node, el);
+                self.procNode(node.querySelectorAll('*'), el);
+                self.procTextNode(node, el);
+                self.procTextModel(el);
+                self.procModel(node, el);
+                self.procModel(node.querySelectorAll('*'), el);
+            };
             var el = self._traces.fors[cnti];
             var hc = el['_hc'];
             if (src_model && src_model !== hc.for_model) {
                 continue;
             }
-            var model_str = String(hc.attr.for).replace(/(\(.*\)|.+)\s+(in)\s+/g, '').replace(/\s/g, '');
-            var data_str = String(hc.attr.for).replace(/\s+in\s+.*$/, '').replace(/\s/g, '');
             var model = hc.for_model;
             var parentNode = hc.for_comment.parentNode;
             delete hc.for_txts;
@@ -378,6 +411,9 @@ var Hacci = (function () {
                 case 'splice':
                     rms = hc.for_elements.splice(args[0] ? args[0] : null, args[1] ? args[1] : null);
                     break;
+                default:
+                    clear = model.length < 1;
+                    break;
             }
             if (rms) {
                 while (rms.length > 0) {
@@ -390,124 +426,118 @@ var Hacci = (function () {
                 parentNode.removeChild(hc.for_elements[0]);
                 hc.for_elements.splice(0, 1);
             }
-            var procs = function (node, el) {
-                self.procNode(node, el);
-                self.procNode(node.querySelectorAll('*'), el);
-                self.procTextNode(node, el);
-                self.procTextModel(el);
-                self.procModel(node, el);
-                self.procModel(node.querySelectorAll('*'), el);
-            };
-            if (data_str.charAt(0) === '(') {
-                var data_keys = data_str.substring(1, data_str.length - 1).split(',');
-                if (clear) {
-                    for (var cntk = 0; cntk < model.length; cntk++) {
-                        var opt_str = '';
-                        for (var cntki = 0; cntki < data_keys.length; cntki++) {
-                            opt_str += "var " + data_keys[cntki] + "=" + model_str + "[" + cntk + "]['" + data_keys[cntki] + "'];\n";
-                        }
-                        hc['model_str'] = opt_str;
-                        var node = el.cloneNode(true);
-                        parentNode.appendChild(node);
-                        hc.for_elements.push(node);
-                        procs(node, el);
-                    }
+            if (action && action === 'push') {
+                for (var cntk = model.length - args.length; cntk < model.length; cntk++) {
+                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                    var node = el.cloneNode(true);
+                    parentNode.appendChild(node);
+                    hc.for_elements.push(node);
+                    procs(node, el);
                 }
-                else {
-                    if (action === 'push') {
-                        for (var cntk = model.length - args.length; cntk < model.length; cntk++) {
-                            var opt_str = '';
-                            for (var cntki = 0; cntki < data_keys.length; cntki++) {
-                                opt_str += "var " + data_keys[cntki] + "=" + model_str + "[" + cntk + "]['" + data_keys[cntki] + "'];\n";
-                            }
-                            hc['model_str'] = opt_str;
-                            var node = el.cloneNode(true);
-                            parentNode.appendChild(node);
-                            hc.for_elements.push(node);
-                            procs(node, el);
-                        }
+            }
+            else if (action && action === 'unshift') {
+                for (var cntk = args.length - 1; cntk > -1; cntk--) {
+                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                    var node = el.cloneNode(true);
+                    parentNode.insertBefore(node, hc.for_elements[0]);
+                    hc.for_elements.unshift(node);
+                    procs(node, el);
+                }
+            }
+            else if (action && action === 'splice') {
+                var insert_idx = args[0];
+                for (var cntk = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
+                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                    var node = el.cloneNode(true);
+                    if (hc.for_elements.length <= cntk) {
+                        parentNode.appendChild(node);
                     }
-                    else if (action === 'unshift') {
-                        for (var cntk = args.length - 1; cntk > -1; cntk--) {
-                            var opt_str = '';
-                            for (var cntki = 0; cntki < data_keys.length; cntki++) {
-                                opt_str += "var " + data_keys[cntki] + "=" + model_str + "[" + cntk + "]['" + data_keys[cntki] + "'];\n";
-                            }
-                            hc['model_str'] = opt_str;
-                            var node = el.cloneNode(true);
-                            parentNode.insertBefore(node, hc.for_elements[0]);
-                            hc.for_elements.unshift(node);
-                            procs(node, el);
-                        }
+                    else {
+                        parentNode.insertBefore(node, hc.for_elements[cntk]);
                     }
-                    else if (action === 'splice' && args.length > 2) {
-                        var insert_idx = args[0];
-                        for (var cntk = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
-                            var opt_str = '';
-                            for (var cntki = 0; cntki < data_keys.length; cntki++) {
-                                opt_str += "var " + data_keys[cntki] + "=" + model_str + "[" + cntk + "]['" + data_keys[cntki] + "'];\n";
-                            }
-                            hc['model_str'] = opt_str;
-                            var node = el.cloneNode(true);
-                            if (hc.for_elements.length <= cntk) {
-                                parentNode.appendChild(node);
-                            }
-                            else {
-                                parentNode.insertBefore(node, hc.for_elements[cntk]);
-                            }
-                            hc.for_elements.splice(cntk, 0, node);
-                            procs(node, el);
-                        }
-                    }
+                    hc.for_elements.splice(cntk, 0, node);
+                    procs(node, el);
                 }
             }
             else {
-                if (clear) {
-                    for (var cntk = 0; cntk < model.length; cntk++) {
-                        var opt_str = "var " + data_str + "=" + model_str + "[" + cntk + "];\n";
-                        hc['model_str'] = opt_str;
+                for (var cntk = 0; cntk < model.length; cntk++) {
+                    var node = null;
+                    try {
+                        node = hc.for_elements[cntk];
+                    }
+                    catch (e) { }
+                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                    if (typeof (node) === 'undefined') {
+                        node = el.cloneNode(true);
+                        var len = hc.for_elements.length;
+                        if (len > 0 && hc.for_elements[len - 1].nextElementSibling) {
+                            parentNode.insertBefore(node, hc.for_elements[len - 1].nextElementSibling);
+                        }
+                        else {
+                            parentNode.appendChild(node);
+                        }
+                        hc.for_elements.push(node);
+                        procs(node, el);
+                    }
+                    else {
+                        var newNode = el.cloneNode(true);
+                        procs(newNode, el);
+                        hc.for_elements[cntk] = newNode;
+                        parentNode.insertBefore(newNode, node);
+                        parentNode.removeChild(node);
+                    }
+                }
+            }
+            continue;
+            if (clear) {
+                for (var cntk = 0; cntk < model.length; cntk++) {
+                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                    var node = el.cloneNode(true);
+                    !node['_hc:for'] && (node['_hc:for'] = {});
+                    node['_hc:for'] && (node['_hc:for']['model'] = model[cntk]);
+                    parentNode.appendChild(node);
+                    hc.for_elements.push(node);
+                    procs(node, el);
+                }
+            }
+            else {
+                if (action === 'push') {
+                    for (var cntk = model.length - args.length; cntk < model.length; cntk++) {
+                        hc['model_str'] = getModelStr(hc.attr.for, cntk);
                         var node = el.cloneNode(true);
+                        !node['_hc:for'] && (node['_hc:for'] = {});
+                        node['_hc:for'] && (node['_hc:for']['model'] = model[cntk]);
                         parentNode.appendChild(node);
                         hc.for_elements.push(node);
                         procs(node, el);
                     }
                 }
-                else {
-                    if (action === 'push') {
-                        for (var cntk = model.length - args.length; cntk < model.length; cntk++) {
-                            var opt_str = "var " + data_str + "=" + model_str + "[" + cntk + "];\n";
-                            hc['model_str'] = opt_str;
-                            var node = el.cloneNode(true);
+                else if (action === 'unshift') {
+                    for (var cntk = args.length - 1; cntk > -1; cntk--) {
+                        hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                        var node = el.cloneNode(true);
+                        !node['_hc:for'] && (node['_hc:for'] = {});
+                        node['_hc:for'] && (node['_hc:for']['model'] = model[cntk]);
+                        parentNode.insertBefore(node, hc.for_elements[0]);
+                        hc.for_elements.unshift(node);
+                        procs(node, el);
+                    }
+                }
+                else if (action === 'splice' && args.length > 2) {
+                    var insert_idx = args[0];
+                    for (var cntk = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
+                        hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                        var node = el.cloneNode(true);
+                        !node['_hc:for'] && (node['_hc:for'] = {});
+                        node['_hc:for'] && (node['_hc:for']['model'] = model[cntk]);
+                        if (hc.for_elements.length <= cntk) {
                             parentNode.appendChild(node);
-                            hc.for_elements.push(node);
-                            procs(node, el);
                         }
-                    }
-                    else if (action === 'unshift') {
-                        for (var cntk = args.length - 1; cntk > -1; cntk--) {
-                            var opt_str = "var " + data_str + "=" + model_str + "[" + cntk + "];\n";
-                            hc['model_str'] = opt_str;
-                            var node = el.cloneNode(true);
-                            parentNode.insertBefore(node, hc.for_elements[0]);
-                            hc.for_elements.unshift(node);
-                            procs(node, el);
+                        else {
+                            parentNode.insertBefore(node, hc.for_elements[cntk]);
                         }
-                    }
-                    else if (action === 'splice' && args.length > 2) {
-                        var insert_idx = args[0];
-                        for (var cntk = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
-                            var opt_str = "var " + data_str + "=" + model_str + "[" + cntk + "];\n";
-                            hc['model_str'] = opt_str;
-                            var node = el.cloneNode(true);
-                            if (hc.for_elements.length <= cntk) {
-                                parentNode.appendChild(node);
-                            }
-                            else {
-                                parentNode.insertBefore(node, hc.for_elements[cntk]);
-                            }
-                            hc.for_elements.splice(cntk, 0, node);
-                            procs(node, el);
-                        }
+                        hc.for_elements.splice(cntk, 0, node);
+                        procs(node, el);
                     }
                 }
             }
