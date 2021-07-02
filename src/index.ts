@@ -732,11 +732,11 @@ class Hacci {
                         let props_str: string = '';
                         for (let cnti: number = 0; cnti < props.length; cnti++) {
                             props_str += `${cnti > 0 ? '.' : ''}${props[cnti]}`;
+                            const props_model: any = model[props_str];
                             //
-                            if (Array.isArray(model[props_str])) {
-                                self._traces.model.listen_array(model[props_str]);
-                                break;
-                            }
+                            if (!Array.isArray(props_model)) continue;
+                            //
+                            self.procForModel(props_model, '_replace', cnti);
                         }
                     }
 
@@ -906,7 +906,23 @@ class Hacci {
             //     return;
             // }
 
-            if (action && action === 'push') {
+            if (action && action === '_replace') {
+                const idx: number = args[0];
+                //
+                hc['model_str'] = getModelStr(hc.attr.for, idx);
+                // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+
+                //
+                const node: Node = (el as HTMLElement).cloneNode(true);
+                parentNode.insertBefore(node, hc.for_elements[idx]);
+                parentNode.removeChild(hc.for_elements[idx]);
+                //
+                hc.for_elements.splice(idx, 1, node);
+
+                //
+                procs(node, el);
+            }
+            else if (action && action === 'push') {
                 for (let cntk: number = model.length - args.length; cntk < model.length; cntk++) {
                     //
                     hc['model_str'] = getModelStr(hc.attr.for, cntk);

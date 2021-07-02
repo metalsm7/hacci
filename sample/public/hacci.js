@@ -337,10 +337,10 @@ var Hacci = (function () {
                     var props_str = '';
                     for (var cnti = 0; cnti < props.length; cnti++) {
                         props_str += "" + (cnti > 0 ? '.' : '') + props[cnti];
-                        if (Array.isArray(model[props_str])) {
-                            self._traces.model.listen_array(model[props_str]);
-                            break;
-                        }
+                        var props_model = model[props_str];
+                        if (!Array.isArray(props_model))
+                            continue;
+                        self.procForModel(props_model, '_replace', cnti);
                     }
                 }
                 self.applyTextChange();
@@ -426,7 +426,16 @@ var Hacci = (function () {
                 parentNode.removeChild(hc.for_elements[0]);
                 hc.for_elements.splice(0, 1);
             }
-            if (action && action === 'push') {
+            if (action && action === '_replace') {
+                var idx = args[0];
+                hc['model_str'] = getModelStr(hc.attr.for, idx);
+                var node = el.cloneNode(true);
+                parentNode.insertBefore(node, hc.for_elements[idx]);
+                parentNode.removeChild(hc.for_elements[idx]);
+                hc.for_elements.splice(idx, 1, node);
+                procs(node, el);
+            }
+            else if (action && action === 'push') {
                 for (var cntk = model.length - args.length; cntk < model.length; cntk++) {
                     hc['model_str'] = getModelStr(hc.attr.for, cntk);
                     var node = el.cloneNode(true);
