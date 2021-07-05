@@ -407,6 +407,9 @@ var Hacci = (function () {
                 case 'shift':
                     rms = hc.for_elements.splice(0, 1);
                     break;
+                case 'splice':
+                    rms = hc.for_elements.splice(args[0] ? args[0] : null, args[1] ? args[1] : null);
+                    break;
                 default:
                     clear = model.length < 1;
                     break;

@@ -46,58 +46,10 @@
             <tr><td>- <a href="#app_condition_disabled_ex1">Disabled</a></td></tr>
             
             <tr valign="top"><td rowspan="1" style="font-weight: bold;">Template&nbsp;&nbsp;&nbsp;</td><td>- <a href="#app_template_ex1">Template</a></td></tr>
+            
+            <tr valign="top"><td rowspan="1" style="font-weight: bold;">For&nbsp;&nbsp;&nbsp;</td><td>- <a href="#app_for_ex1">For</a></td></tr>
         </table>
         <hr />
-
-        <h2>For</h2>
-
-        <div>
-            <div id="app_for_ex1">
-                <h3>For</h4>
-                <div class="example">
-                    <table>
-                        <tr hc:for="data in list">
-                            <td hc:click="onClick(data.id)" hc:text="data.id"></td>
-                            <td hc:click="onClick(data.pwd)">{{ data.pwd }}</td>
-                            <td hc:click="onClick(data.name)" hc:html="data.name"></td>
-                        </tr>
-                    </table>
-                    <hr />
-                    <table>
-                        <tr hc:for="(id, pwd, name) in list2">
-                            <td hc:text="id"></td>
-                            <td>{{ pwd }}</td>
-                            <td hc:html="name"></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-            <script type="text/javascript">
-            new Hacci({
-                id: 'for',
-                el: document.querySelector('#app_for_ex1'),
-                data: {
-                    list: [
-                        { id: 'id1', pwd: 'pwd1', name: '<p style="color:red;">name1</p>', }, 
-                        { id: 'id2', pwd: 'pwd2', name: '<p style="color:green;">name2</p>', }, 
-                        { id: 'id3', pwd: 'pwd3', name: '<p style="color:tellow;">name3</p>', }, 
-                        { id: 'id4', pwd: 'pwd4', name: '<p style="color:blue;">name4</p>', }, 
-                    ],
-                    list2: [
-                        { id: 'id1', pwd: 'pwd1', name: '<p style="color:red;">name1</p>', }, 
-                        { id: 'id2', pwd: 'pwd2', name: '<p style="color:green;">name2</p>', }, 
-                    ],
-                },
-                method: {
-                    onClick: function(data) {
-                        alert('click - data:' + JSON.stringify(data));
-                    }
-                },
-                mounted: function() {
-                }
-            }).mount();
-            </script>
-        </div>
 
         <h2>Model</h2>
 
@@ -1173,6 +1125,204 @@ window.hc = new Hacci({
                         this.result_visible = this.code.length > 0;
                         this.result = this.code === '1234';
                     }
+                }
+            }).mount();
+            </script>
+        </div>
+
+        <h2>For</h2>
+
+        <div>
+            <div id="app_for_ex1">
+                <h3>For</h4>
+                <div class="example">
+                    <table>
+                        <th>
+                            <tr>
+                                <td colspan="4"> > list - 1</td>
+                            </tr>
+                        </th>
+                        <tr hc:for="data in list">
+                            <td hc:click="onOpen('id', data.id)" hc:text="data.id"></td>
+                            <td>{{ data.pwd }}</td>
+                            <td hc:click="onOpen('name', data.name)" hc:html="data.name"></td>
+                            <td hc:click="onRemove(data)">X</td>
+                        </tr>
+                    </table>
+                    <hr />
+                    <table>
+                        <th>
+                            <tr>
+                                <td colspan="4"> > list - 2</td>
+                            </tr>
+                        </th>
+                        <tr hc:for="(id, pwd, name) in list2">
+                            <td hc:click="onOpen('id', id)" hc:text="id"></td>
+                            <td>{{ pwd }}</td>
+                            <td hc:click="onOpen('name', name)" hc:html="name"></td>
+                            <td hc:click="onRemoveById(id)">X</td>
+                        </tr>
+                    </table>
+                    <hr />
+                    <table>
+                        <tr>
+                            <td><input type="text" hc:model="req_data.id" style="width:50px;"></td>
+                            <td><input type="password" hc:model="req_data.pwd" style="width:50px;"></td>
+                            <td><input type="text" hc:model="req_data.name" style="width:50px;"></td>
+                            <td><button hc:click="onAdd(1)">+ list1</button></td>
+                            <td><button hc:click="onAdd(2)">+ list2</button></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <pre><code hc:ref="code" class="language-html">
+&lt;div id="app_for_ex1"&gt;
+    &lt;h3&gt;For&lt;/h4&gt;
+    &lt;div class="example"&gt;
+        &lt;table&gt;
+            &lt;th&gt;
+                &lt;tr&gt;
+                    &lt;td colspan="4"&gt; &gt; list - 1&lt;/td&gt;
+                &lt;/tr&gt;
+            &lt;/th&gt;
+            &lt;tr hc:for="data in list"&gt;
+                &lt;td hc:click="onOpen('id', data.id)" hc:text="data.id"&gt;&lt;/td&gt;
+                &lt;td&gt;{{ data.pwd }}&lt;/td&gt;
+                &lt;td hc:click="onOpen('name', data.name)" hc:html="data.name"&gt;&lt;/td&gt;
+                &lt;td hc:click="onRemove(data)"&gt;X&lt;/td&gt;
+            &lt;/tr&gt;
+        &lt;/table&gt;
+        &lt;hr /&gt;
+        &lt;table&gt;
+            &lt;th&gt;
+                &lt;tr&gt;
+                    &lt;td colspan="4"&gt; &gt; list - 2&lt;/td&gt;
+                &lt;/tr&gt;
+            &lt;/th&gt;
+            &lt;tr hc:for="(id, pwd, name) in list2"&gt;
+                &lt;td hc:click="onOpen('id', id)" hc:text="id"&gt;&lt;/td&gt;
+                &lt;td&gt;{{ pwd }}&lt;/td&gt;
+                &lt;td hc:click="onOpen('name', name)" hc:html="name"&gt;&lt;/td&gt;
+                &lt;td hc:click="onRemoveById(id)"&gt;X&lt;/td&gt;
+            &lt;/tr&gt;
+        &lt;/table&gt;
+        &lt;hr /&gt;
+        &lt;table&gt;
+            &lt;tr&gt;
+                &lt;td&gt;&lt;input type="text" hc:model="req_data.id" style="width:50px;"&gt;&lt;/td&gt;
+                &lt;td&gt;&lt;input type="password" hc:model="req_data.pwd" style="width:50px;"&gt;&lt;/td&gt;
+                &lt;td&gt;&lt;input type="text" hc:model="req_data.name" style="width:50px;"&gt;&lt;/td&gt;
+                &lt;td&gt;&lt;button hc:click="onAdd(1)"&gt;+ list1&lt;/button&gt;&lt;/td&gt;
+                &lt;td&gt;&lt;button hc:click="onAdd(2)"&gt;+ list2&lt;/button&gt;&lt;/td&gt;
+            &lt;/tr&gt;
+        &lt;/table&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script type="text/javascript"&gt;
+new Hacci({
+    id: 'for',
+    el: document.querySelector('#app_for_ex1'),
+    data: {
+        list: [
+            { id: 'id1', pwd: 'pwd1', name: '&lt;p style="color:red;"&gt;name1&lt;/p&gt;', }, 
+            { id: 'id2', pwd: 'pwd2', name: '&lt;p style="color:green;"&gt;name2&lt;/p&gt;', }, 
+            { id: 'id3', pwd: 'pwd3', name: '&lt;p style="color:tellow;"&gt;name3&lt;/p&gt;', }, 
+            { id: 'id4', pwd: 'pwd4', name: '&lt;p style="color:blue;"&gt;name4&lt;/p&gt;', }, 
+        ],
+        list2: [
+            { id: 'id11', pwd: 'pwd11', name: '&lt;p style="color:red;"&gt;name11&lt;/p&gt;', }, 
+            { id: 'id12', pwd: 'pwd12', name: '&lt;p style="color:green;"&gt;name12&lt;/p&gt;', }, 
+        ],
+        req_data: {
+            id: '', 
+            pwd: '',
+            name: '',
+        }
+    },
+    method: {
+        onOpen: function(type, data) {
+            alert(type + ' is ' + data);
+        },
+        onRemove: function(row) {
+            this.list.indexOf(row) &gt; -1 && this.list.splice(this.list.indexOf(row), 1);
+        },
+        onRemoveById: function(id) {
+            for (let cnti = 0; cnti &lt; this.list2.length; cnti++) {
+                if (this.list2[cnti].id === id) {
+                    this.list2.splice(cnti, 1);
+                    cnti--;
+                }
+            }
+        },
+        onAdd: function(target) {
+            if (target === 1) {
+                this.list.push(JSON.parse(JSON.stringify(this.req_data)));
+            }
+            else {
+                this.list2.push(JSON.parse(JSON.stringify(this.req_data)));
+            }
+            this.clearReqData();
+        },
+        clearReqData: function() {
+            this.req_data.id = '';
+            this.req_data.pwd = '';
+            this.req_data.name = '';
+        },
+    }
+}).mount();
+&lt;/script&gt;
+            </code></pre>
+            <script type="text/javascript">
+            new Hacci({
+                id: 'for',
+                el: document.querySelector('#app_for_ex1'),
+                data: {
+                    list: [
+                        { id: 'id1', pwd: 'pwd1', name: '<p style="color:red;">name1</p>', }, 
+                        { id: 'id2', pwd: 'pwd2', name: '<p style="color:green;">name2</p>', }, 
+                        { id: 'id3', pwd: 'pwd3', name: '<p style="color:tellow;">name3</p>', }, 
+                        { id: 'id4', pwd: 'pwd4', name: '<p style="color:blue;">name4</p>', }, 
+                    ],
+                    list2: [
+                        { id: 'id11', pwd: 'pwd11', name: '<p style="color:red;">name11</p>', }, 
+                        { id: 'id12', pwd: 'pwd12', name: '<p style="color:green;">name12</p>', }, 
+                    ],
+                    req_data: {
+                        id: '', 
+                        pwd: '',
+                        name: '',
+                    }
+                },
+                method: {
+                    onOpen: function(type, data) {
+                        alert(type + ' is ' + data);
+                    },
+                    onRemove: function(row) {
+                        this.list.indexOf(row) > -1 && this.list.splice(this.list.indexOf(row), 1);
+                    },
+                    onRemoveById: function(id) {
+                        for (let cnti = 0; cnti < this.list2.length; cnti++) {
+                            if (this.list2[cnti].id === id) {
+                                this.list2.splice(cnti, 1);
+                                cnti--;
+                            }
+                        }
+                    },
+                    onAdd: function(target) {
+                        if (target === 1) {
+                            this.list.push(JSON.parse(JSON.stringify(this.req_data)));
+                        }
+                        else {
+                            this.list2.push(JSON.parse(JSON.stringify(this.req_data)));
+                        }
+                        this.clearReqData();
+                    },
+                    clearReqData: function() {
+                        this.req_data.id = '';
+                        this.req_data.pwd = '';
+                        this.req_data.name = '';
+                    },
                 }
             }).mount();
             </script>

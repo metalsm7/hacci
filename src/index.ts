@@ -875,9 +875,9 @@ class Hacci {
                 case 'shift':
                     rms = hc.for_elements.splice(0, 1);
                     break;
-                // case 'splice':
-                //     rms = hc.for_elements.splice(args[0] ? args[0] : null, args[1] ? args[1] : null);
-                //     break;
+                case 'splice':
+                    rms = hc.for_elements.splice(args[0] ? args[0] : null, args[1] ? args[1] : null);
+                    break;
                 default:
                     // action 없이 들어오는 경우 중 model 갯수가 0이면 clear 처리
                     clear = model.length < 1;
