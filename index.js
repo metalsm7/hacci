@@ -587,6 +587,10 @@ var Hacci = (function () {
             var fnRes = calcRes(hc['attr']['disabled'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             node.disabled = fnRes;
         }
+        if (hc['attr']['class']) {
+            var fnRes = calcRes(hc['attr']['class'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+            node.className = fnRes;
+        }
         if (hc['attr']['html']) {
             var fnRes = calcRes(hc['attr']['html'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             node.innerHTML = fnRes;

@@ -1604,6 +1604,12 @@ class Hacci {
             //
             (node as HTMLInputElement).disabled = fnRes;
         }
+        if (hc['attr']['class']) {
+            const fnRes = calcRes(hc['attr']['class'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+            //
+            (node as Element).className = fnRes;
+            // console.log(`applyModel - html:${(el as Element).innerHTML}`);
+        }
         if (hc['attr']['html']) {
             const fnRes = calcRes(hc['attr']['html'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             //
