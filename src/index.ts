@@ -54,6 +54,12 @@ class Hacci {
     private _toi_select = ['select-one', 'select-multiple'];
     //
     private _bus: any = {};
+    //
+    private _tick: any = {
+        limit: 50,
+        timeout: null,
+        targets: [],
+    };
 
     static get instances() {
         return Hacci._instances;
@@ -108,20 +114,25 @@ class Hacci {
         if (option.computed) {
             const compute_keys = Object.keys(option.computed);
             for (let cnti: number = 0; cnti < compute_keys.length; cnti++) {
-                this[compute_keys[cnti]] = this.fromArrowFunc(option.computed[compute_keys[cnti]]).bind(this);
+                // this[compute_keys[cnti]] = this.fromArrowFunc(option.computed[compute_keys[cnti]]).bind(this);
+                this[compute_keys[cnti]] = option.computed[compute_keys[cnti]].bind(this);
             }
         }
         //
         if (option.method) {
             const method_keys = Object.keys(option.method);
             for (let cnti: number = 0; cnti < method_keys.length; cnti++) {
-                this[method_keys[cnti]] = this.fromArrowFunc(option.method[method_keys[cnti]]).bind(this);
+                // this[method_keys[cnti]] = this.fromArrowFunc(option.method[method_keys[cnti]]).bind(this);
+                this[method_keys[cnti]] = option.method[method_keys[cnti]].bind(this);
             }
         }
         //
-        option.created && (this._on.created = this.fromArrowFunc(option.created).bind(this));
-        option.mounted && (this._on.mounted = this.fromArrowFunc(option.mounted).bind(this));
-        option.destroyed && (this._on.destroyed = this.fromArrowFunc(option.destroyed).bind(this));
+        // option.created && (this._on.created = this.fromArrowFunc(option.created).bind(this));
+        option.created && (this._on.created = option.created.bind(this));
+        // option.mounted && (this._on.mounted = this.fromArrowFunc(option.mounted).bind(this));
+        option.mounted && (this._on.mounted = option.mounted.bind(this));
+        // option.destroyed && (this._on.destroyed = this.fromArrowFunc(option.destroyed).bind(this));
+        option.destroyed && (this._on.destroyed = option.destroyed.bind(this));
 
         //
         this._template && (this.el.innerHTML = this._template);
@@ -1516,11 +1527,22 @@ class Hacci {
         this.procModel(null, null, null, true);
     }
 
+    private procTick(): void {
+
+    }
+
     private procModel(node: Node|NodeList|Node[]|null = null, root: Node = null, model_groups: string[]|null = null, is_init: boolean = false): void {
         // console.log(`procModel.St`);
 
         //
         const self: Hacci = this;
+
+        // tick apply
+        if (!self._tick.timeout) {
+            self._tick.timeout = setTimeout(function(
+                // 
+            ), self._tick.limit);
+        }
 
         //
         !node && (node = self._traces.elements);
