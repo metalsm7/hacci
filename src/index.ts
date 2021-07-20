@@ -1527,9 +1527,9 @@ class Hacci {
         this.procModel(null, null, null, true);
     }
 
-    private procTick(): void {
+    // private procTick(): void {
 
-    }
+    // }
 
     private procModel(node: Node|NodeList|Node[]|null = null, root: Node = null, model_groups: string[]|null = null, is_init: boolean = false): void {
         // console.log(`procModel.St`);
@@ -1537,12 +1537,12 @@ class Hacci {
         //
         const self: Hacci = this;
 
-        // tick apply
-        if (!self._tick.timeout) {
-            self._tick.timeout = setTimeout(function(
-                // 
-            ), self._tick.limit);
-        }
+        // // tick apply
+        // if (!self._tick.timeout) {
+        //     self._tick.timeout = setTimeout(function(
+        //         // 
+        //     ), self._tick.limit);
+        // }
 
         //
         !node && (node = self._traces.elements);

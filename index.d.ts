@@ -23,6 +23,7 @@ declare class Hacci {
     private _toi_check;
     private _toi_select;
     private _bus;
+    private _tick;
     static readonly instances: any;
     constructor(option?: HacciOption | null);
     private init;

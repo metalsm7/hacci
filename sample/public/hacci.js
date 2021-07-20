@@ -30,6 +30,11 @@ var Hacci = (function () {
         this._toi_check = ['radio', 'checkbox'];
         this._toi_select = ['select-one', 'select-multiple'];
         this._bus = {};
+        this._tick = {
+            limit: 50,
+            timeout: null,
+            targets: [],
+        };
         !option && (option = {
             id: null,
             el: null,
@@ -59,18 +64,18 @@ var Hacci = (function () {
         if (option.computed) {
             var compute_keys = Object.keys(option.computed);
             for (var cnti = 0; cnti < compute_keys.length; cnti++) {
-                this[compute_keys[cnti]] = this.fromArrowFunc(option.computed[compute_keys[cnti]]).bind(this);
+                this[compute_keys[cnti]] = option.computed[compute_keys[cnti]].bind(this);
             }
         }
         if (option.method) {
             var method_keys = Object.keys(option.method);
             for (var cnti = 0; cnti < method_keys.length; cnti++) {
-                this[method_keys[cnti]] = this.fromArrowFunc(option.method[method_keys[cnti]]).bind(this);
+                this[method_keys[cnti]] = option.method[method_keys[cnti]].bind(this);
             }
         }
-        option.created && (this._on.created = this.fromArrowFunc(option.created).bind(this));
-        option.mounted && (this._on.mounted = this.fromArrowFunc(option.mounted).bind(this));
-        option.destroyed && (this._on.destroyed = this.fromArrowFunc(option.destroyed).bind(this));
+        option.created && (this._on.created = option.created.bind(this));
+        option.mounted && (this._on.mounted = option.mounted.bind(this));
+        option.destroyed && (this._on.destroyed = option.destroyed.bind(this));
         this._template && (this.el.innerHTML = this._template);
         var observer = new MutationObserver(function (mutationsList, observer) {
             for (var _i = 0, mutationsList_1 = mutationsList; _i < mutationsList_1.length; _i++) {
