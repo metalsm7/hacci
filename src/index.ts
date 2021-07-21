@@ -895,6 +895,9 @@ class Hacci {
                 case 'splice':
                     rms = hc.for_elements.splice(args[0] ? args[0] : null, args[1] ? args[1] : null);
                     break;
+                case '_replace':
+                    clear = false;
+                    break;
                 default:
                     // action 없이 들어오는 경우 중 model 갯수가 0이면 clear 처리
                     // clear = model.length < 1;
@@ -942,15 +945,22 @@ class Hacci {
 
                     //
                     const newNode: Node = (el as HTMLElement).cloneNode(true);
-                    //
                     procs(newNode, el);
 
-                    //
-                    parentNode.insertBefore(newNode, hc.for_elements[cntk]);
-                    parentNode.removeChild(hc.for_elements[cntk]);
+                    // 기존 자료의 attributes 값을 newNode의 attribute 값으로 변경 처리(변경된 경우만...)
+                    self.replaceAttributes(hc.for_elements[cntk], newNode);
+                    // const node_attrs: NamedNodeMap = (hc.for_elements[cntk] as HTMLElement).attributes;
+                    // for (let cntq = 0; cntq < node_attrs.length; cntq++) {
+                    //     const node_attr: Attr = node_attrs.item(cntq);
+                    //     console.log(`attr - name:${node_attr.name} - ${(newNode as HTMLElement).attributes.getNamedItem(node_attr.name).value} / ${node_attr.value}`);
+                    // }
 
                     //
-                    hc.for_elements[cntk] = newNode;
+                    // parentNode.insertBefore(newNode, hc.for_elements[cntk]);
+                    // parentNode.removeChild(hc.for_elements[cntk]);
+
+                    // //
+                    // hc.for_elements[cntk] = newNode;
                 }
             }
             else if (action && action === 'push') {
@@ -1993,6 +2003,30 @@ class Hacci {
         code += 'return r.join("");';
         // return (new Function(code.replace(/[\r\t\n]/g, ''))).apply(options);
         return new Function(code.replace(/[\r\t\n]/g, ''));
+    }
+
+    private replaceAttributes(srcNode: Node, tgtNode: Node): void {
+        // console.log(`replaceAttributes`);
+        //
+        const node_attrs: NamedNodeMap = (srcNode as HTMLElement).attributes;
+        if (node_attrs) {
+            for (let cnti = 0; cnti < node_attrs.length; cnti++) {
+                const src_node_attr: Attr = node_attrs.item(cnti);
+                const tgt_node_attr: Attr = (tgtNode as HTMLElement).attributes.getNamedItem(src_node_attr.name);
+                // console.log(`attr - name:${src_node_attr.name} - ${tgt_node_attr.value} / ${src_node_attr.value}`);
+                tgt_node_attr.value !== src_node_attr.value &&
+                    (src_node_attr.value = tgt_node_attr.value);
+            }
+        }
+        //
+        if (srcNode.hasChildNodes()) {
+            //
+            for (let cnti: number = 0; cnti < srcNode.childNodes.length; cnti++) {
+                tgtNode.hasChildNodes() &&
+                    tgtNode.childNodes[cnti] &&
+                    this.replaceAttributes(srcNode.childNodes[cnti], tgtNode.childNodes[cnti]);
+            }
+        }
     }
 
     private scrollHeight(el: Element): number {

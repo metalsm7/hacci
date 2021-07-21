@@ -42,6 +42,7 @@ declare class Hacci {
     private applyTextChange;
     private procTextModel;
     private compileText;
+    private replaceAttributes;
     private scrollHeight;
     private scrollTop;
     private innerHeight;

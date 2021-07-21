@@ -416,6 +416,9 @@ var Hacci = (function () {
                 case 'splice':
                     rms = hc.for_elements.splice(args[0] ? args[0] : null, args[1] ? args[1] : null);
                     break;
+                case '_replace':
+                    clear = false;
+                    break;
                 default:
                     break;
             }
@@ -439,9 +442,7 @@ var Hacci = (function () {
                     hc['model_str'] = getModelStr(hc.attr.for, cntk);
                     var newNode = el.cloneNode(true);
                     procs(newNode, el);
-                    parentNode.insertBefore(newNode, hc.for_elements[cntk]);
-                    parentNode.removeChild(hc.for_elements[cntk]);
-                    hc.for_elements[cntk] = newNode;
+                    self.replaceAttributes(hc.for_elements[cntk], newNode);
                 }
             }
             else if (action && action === 'push') {
@@ -856,6 +857,24 @@ var Hacci = (function () {
         add(html.substr(cursor, html.length - cursor));
         code += 'return r.join("");';
         return new Function(code.replace(/[\r\t\n]/g, ''));
+    };
+    Hacci.prototype.replaceAttributes = function (srcNode, tgtNode) {
+        var node_attrs = srcNode.attributes;
+        if (node_attrs) {
+            for (var cnti = 0; cnti < node_attrs.length; cnti++) {
+                var src_node_attr = node_attrs.item(cnti);
+                var tgt_node_attr = tgtNode.attributes.getNamedItem(src_node_attr.name);
+                tgt_node_attr.value !== src_node_attr.value &&
+                    (src_node_attr.value = tgt_node_attr.value);
+            }
+        }
+        if (srcNode.hasChildNodes()) {
+            for (var cnti = 0; cnti < srcNode.childNodes.length; cnti++) {
+                tgtNode.hasChildNodes() &&
+                    tgtNode.childNodes[cnti] &&
+                    this.replaceAttributes(srcNode.childNodes[cnti], tgtNode.childNodes[cnti]);
+            }
+        }
     };
     Hacci.prototype.scrollHeight = function (el) {
         return el.nodeType === 9 ?
