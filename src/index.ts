@@ -838,16 +838,22 @@ class Hacci {
 
             //
             const hc = el['_hc'];
+            // console.log(`procForModel - el:=>`);
+            // console.log(el);
+            // console.log(`procForModel - el.hc:=>`);
+            // console.log(hc);
             
             //
             // if (src_model) {
-            //     console.log(`procForModel - match:${src_model === hc.for_model}`);
+            //     console.log(`procForModel - match - src_model:${src_model}/hc.for_model:${hc.for_model} = ${src_model === hc.for_model}`);
             //     console.log(src_model);
             //     console.log(hc.for_model);
             // }
             if (src_model && src_model !== hc.for_model) {
                 // console.log(`procForModel - source not matched`);
-                continue;
+                // continue;
+                hc.for_model = src_model;
+                action = null;
             }
             //
             // const html = (el as HTMLElement).outerHTML;
@@ -891,10 +897,11 @@ class Hacci {
                     break;
                 default:
                     // action 없이 들어오는 경우 중 model 갯수가 0이면 clear 처리
-                    clear = model.length < 1;
+                    // clear = model.length < 1;
                     break;
             }
             if (rms) {
+                // console.log(`procForModel - rms:${rms} / rms.length:${rms.length}`);
                 //
                 while (rms.length > 0) {
                     parentNode.removeChild(rms[0]);
@@ -905,6 +912,7 @@ class Hacci {
             }
 
             //
+            // console.log(`procForModel - clear:${clear} / hc.for_elements.length:${hc.for_elements.length}`);
             while (clear && hc.for_elements.length > 0) {
                 parentNode.removeChild(hc.for_elements[0]);
                 hc.for_elements.splice(0, 1);
@@ -977,32 +985,33 @@ class Hacci {
             //         procs(node, el);
             //     }
             // }
-            // else if (action && action === 'splice') {
-            //     // insert index check
-            //     const insert_idx: number = args[0];
-            //     console.log(`procForModel - action:${action}`);
-            //     for (let cntk: number = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
-            //         //
-            //         hc['model_str'] = getModelStr(hc.attr.for, cntk);
-            //         // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+            else if (action && action === 'splice') {
+                // insert index check
+                const insert_idx: number = args[0];
+                // console.log(`procForModel - action:${action}`);
+                for (let cntk: number = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
+                    //
+                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                    // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
 
-            //         //
-            //         const node: Node = (el as HTMLElement).cloneNode(true);
-            //         if (hc.for_elements.length <= cntk) {
-            //             parentNode.appendChild(node);
-            //         }
-            //         else {
-            //             parentNode.insertBefore(node, hc.for_elements[cntk]);
-            //         }
-            //         //
-            //         hc.for_elements.splice(cntk, 0, node);
-
-            //         //
-            //         procs(node, el);
-            //     }
-            // }
+                    //
+                    const node: Node = (el as HTMLElement).cloneNode(true);
+                    procs(node, el);
+                    //
+                    if (hc.for_elements.length <= cntk) {
+                        parentNode.appendChild(node);
+                    }
+                    else {
+                        parentNode.insertBefore(node, hc.for_elements[cntk]);
+                    }
+                    //
+                    hc.for_elements.splice(cntk, 0, node);
+                }
+            }
             else {
                 //
+                // console.log(`procForModel - ------------------------------`);
+                // console.log(`procForModel - model.length:${model.length}`);
                 for (let cntk: number = 0; cntk < model.length; cntk++) {
                     //
                     let node: Node = null;
@@ -1015,6 +1024,7 @@ class Hacci {
                     // console.log(`procForModel - model[${cntk}]:${JSON.stringify(model[cntk])}`);
                     //
                     if (typeof(node) === 'undefined') {
+                        // console.log(`procForModel - node is undefined`);
                         //
                         node = (el as HTMLElement).cloneNode(true);
                         // !node['_hc:for'] && (node['_hc:for'] = { model: model[cntk], });
@@ -1032,6 +1042,7 @@ class Hacci {
                         procs(node, el);
                     }
                     else {
+                        // console.log(`procForModel - node is not undefined`);
                         //
                         const newNode = (el as HTMLElement).cloneNode(true);
                         // !node['_hc:for'] && (node['_hc:for'] = { model: model[cntk], });
