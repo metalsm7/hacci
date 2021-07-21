@@ -737,6 +737,7 @@ class Hacci {
                     //
                     self._traces.model.listen(model_prop, model[model_prop]);
                     //
+                    // console.log(`defineProperty - props_str:${model_prop} / is array:${is_array}`);
                     if (!is_array) {
                         // 해당 모델의 상위로 올라가는 중 배열 모델이 있으면 -> 해당 모델에 대한 listen 처리
                         const props: string[] = model_prop.split('.');
@@ -748,8 +749,14 @@ class Hacci {
                             if (!Array.isArray(props_model)) continue;
                             // console.log(`defineProperty - props_str:${props_str} / is array:${Array.isArray(props_model)}`);
                             //
+                            // console.log(`defineProperty - procForModel - _replace - ${props_str}.${props[cnti + 1]} - model:${JSON.stringify(model[`${props_str}.${props[cnti + 1]}`])}`);
                             self.procForModel(props_model, '_replace', model[`${props_str}.${props[cnti + 1]}`]);
                         }
+                    }
+                    else {
+                        //
+                        console.log(`defineProperty - props_str:${model_prop} / is array:${is_array} / redefineModel(${model_prop.replace(/^__/, '')})`);
+                        this.redefineModel(model_prop.replace(/^__/, ''));
                     }
 
                     // 모델 변경시 text 변경 처리용
@@ -941,7 +948,7 @@ class Hacci {
                     // console.log(`procForModel - _replace - model exists:${(model[cntk] === args[0])}`);
                     //
                     hc['model_str'] = getModelStr(hc.attr.for, cntk);
-                    // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
+                    // console.log(`procForModel - fors.#${cntk} - model_str:${hc['model_str']}`);
 
                     //
                     const newNode: Node = (el as HTMLElement).cloneNode(true);
@@ -949,6 +956,7 @@ class Hacci {
 
                     // 기존 자료의 attributes 값을 newNode의 attribute 값으로 변경 처리(변경된 경우만...)
                     self.replaceAttributes(hc.for_elements[cntk], newNode);
+                    self.replaceTextNodes(hc.for_elements[cntk], newNode);
                     // const node_attrs: NamedNodeMap = (hc.for_elements[cntk] as HTMLElement).attributes;
                     // for (let cntq = 0; cntq < node_attrs.length; cntq++) {
                     //     const node_attr: Attr = node_attrs.item(cntq);
@@ -1787,6 +1795,9 @@ class Hacci {
         //
         for (let cnti: number = 0; cnti < attr_keys.length; cnti++) {
             const attr_key: string = attr_keys[cnti];
+            //
+            if (typeof(window[`on${attr_key}`]) !== 'undefined') continue;
+            //
             const fnRes = calcRes(hc['attr'][attr_key], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             //
             node[attr_key] = fnRes;
@@ -1899,6 +1910,41 @@ class Hacci {
                                 text: node.childNodes[cnti].textContent,
                                 fn: null    // 컴파일된 함수
                             });
+                        break;
+                }
+            }
+
+            // 모델 변경시 text 변경 처리용
+            this.applyTextChange();
+        }
+    }
+
+    private replaceTextNodes(node: Node, tgtNode: Node): void {
+        // console.log(`replaceTextNodes`);
+        !node && (node = this.el);
+        //
+        if (node.hasChildNodes()) {
+            for (let cnti: number = 0; cnti < node.childNodes.length; cnti++) {
+                switch (node.childNodes[cnti].nodeType) {
+                    case 1: // element
+                        this.replaceTextNodes(node.childNodes[cnti], tgtNode.childNodes[cnti]);
+                        break;
+                    case 3: // text
+                        // console.log(`replaceTextNodes - textContent:${node.childNodes[cnti].textContent} / ${tgtNode.childNodes[cnti].textContent}`);
+                        node.childNodes[cnti].textContent !== tgtNode.childNodes[cnti].textContent &&
+                            (node.childNodes[cnti].textContent = tgtNode.childNodes[cnti].textContent);
+                        // /{{([^}}\r\n]+)?}}/g.test(node.childNodes[cnti].textContent) &&
+                        //     !root && this._traces.txts.push({
+                        //         node: node.childNodes[cnti],
+                        //         text: node.childNodes[cnti].textContent,
+                        //         fn: null    // 컴파일된 함수
+                        //     });
+                        // /{{([^}}\r\n]+)?}}/g.test(node.childNodes[cnti].textContent) &&
+                        //     root && root['_hc'] && root['_hc']['for_txts'] && root['_hc']['for_txts'].push({
+                        //         node: node.childNodes[cnti],
+                        //         text: node.childNodes[cnti].textContent,
+                        //         fn: null    // 컴파일된 함수
+                        //     });
                         break;
                 }
             }

@@ -38,6 +38,7 @@ declare class Hacci {
     private registEventListener;
     private clearEventListeners;
     private searchTextNodes;
+    private replaceTextNodes;
     private procTextNode;
     private applyTextChange;
     private procTextModel;

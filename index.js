@@ -300,6 +300,7 @@ var Hacci = (function () {
         }
     };
     Hacci.prototype.redefineModel = function (prop, parent, prev_model_prop) {
+        var _this = this;
         if (parent === void 0) { parent = null; }
         if (prev_model_prop === void 0) { prev_model_prop = null; }
         var self = this;
@@ -347,6 +348,10 @@ var Hacci = (function () {
                             continue;
                         self.procForModel(props_model, '_replace', model[props_str + "." + props[cnti + 1]]);
                     }
+                }
+                else {
+                    console.log("defineProperty - props_str:" + model_prop + " / is array:" + is_array + " / redefineModel(" + model_prop.replace(/^__/, '') + ")");
+                    _this.redefineModel(model_prop.replace(/^__/, ''));
                 }
                 self.applyTextChange();
             }
@@ -443,6 +448,7 @@ var Hacci = (function () {
                     var newNode = el.cloneNode(true);
                     procs(newNode, el);
                     self.replaceAttributes(hc.for_elements[cntk], newNode);
+                    self.replaceTextNodes(hc.for_elements[cntk], newNode);
                 }
             }
             else if (action && action === 'push') {
@@ -671,6 +677,8 @@ var Hacci = (function () {
         }
         for (var cnti = 0; cnti < attr_keys.length; cnti++) {
             var attr_key = attr_keys[cnti];
+            if (typeof (window["on" + attr_key]) !== 'undefined')
+                continue;
             var fnRes = calcRes(hc['attr'][attr_key], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             node[attr_key] = fnRes;
         }
@@ -779,6 +787,23 @@ var Hacci = (function () {
                             text: node.childNodes[cnti].textContent,
                             fn: null
                         });
+                        break;
+                }
+            }
+            this.applyTextChange();
+        }
+    };
+    Hacci.prototype.replaceTextNodes = function (node, tgtNode) {
+        !node && (node = this.el);
+        if (node.hasChildNodes()) {
+            for (var cnti = 0; cnti < node.childNodes.length; cnti++) {
+                switch (node.childNodes[cnti].nodeType) {
+                    case 1:
+                        this.replaceTextNodes(node.childNodes[cnti], tgtNode.childNodes[cnti]);
+                        break;
+                    case 3:
+                        node.childNodes[cnti].textContent !== tgtNode.childNodes[cnti].textContent &&
+                            (node.childNodes[cnti].textContent = tgtNode.childNodes[cnti].textContent);
                         break;
                 }
             }
