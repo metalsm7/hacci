@@ -394,7 +394,8 @@ var Hacci = (function () {
             var el = self._traces.fors[cnti];
             var hc = el['_hc'];
             if (src_model && src_model !== hc.for_model) {
-                continue;
+                hc.for_model = src_model;
+                action = null;
             }
             var model = hc.for_model;
             var parentNode = hc.for_comment.parentNode;
@@ -416,7 +417,6 @@ var Hacci = (function () {
                     rms = hc.for_elements.splice(args[0] ? args[0] : null, args[1] ? args[1] : null);
                     break;
                 default:
-                    clear = model.length < 1;
                     break;
             }
             if (rms) {
@@ -451,6 +451,21 @@ var Hacci = (function () {
                     procs(node, el);
                     parentNode.appendChild(node);
                     hc.for_elements.push(node);
+                }
+            }
+            else if (action && action === 'splice') {
+                var insert_idx = args[0];
+                for (var cntk = insert_idx; cntk < insert_idx + args.length - 2; cntk++) {
+                    hc['model_str'] = getModelStr(hc.attr.for, cntk);
+                    var node = el.cloneNode(true);
+                    procs(node, el);
+                    if (hc.for_elements.length <= cntk) {
+                        parentNode.appendChild(node);
+                    }
+                    else {
+                        parentNode.insertBefore(node, hc.for_elements[cntk]);
+                    }
+                    hc.for_elements.splice(cntk, 0, node);
                 }
             }
             else {
