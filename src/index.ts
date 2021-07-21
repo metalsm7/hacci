@@ -1596,6 +1596,9 @@ class Hacci {
         //
         const hc = node['_hc'];
 
+        //
+        let attr_keys: string[] = Object.keys(hc['attr']);
+
         // // attribute 목록 확인
         // const attrs: string[] = Object.keys(el['_hc'].attr);
         // console.log(`_hc:${JSON.stringify(el['_hc'])}`);
@@ -1631,34 +1634,52 @@ class Hacci {
                 node.parentNode.insertBefore(hc['comment'], node);
                 node.parentNode.removeChild(node);
             }
-        }
-        if (hc['attr']['disabled']) {
-            const fnRes = calcRes(hc['attr']['disabled'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+
             //
-            (node as HTMLInputElement).disabled = fnRes;
+            attr_keys.splice(attr_keys.indexOf('if'), 1);
         }
+        // if (hc['attr']['disabled']) {
+        //     const fnRes = calcRes(hc['attr']['disabled'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+        //     //
+        //     (node as HTMLInputElement).disabled = fnRes;
+
+        //     //
+        //     attr_keys.splice(attr_keys.indexOf('disabled'), 1);
+        // }
         if (hc['attr']['class']) {
             const fnRes = calcRes(hc['attr']['class'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             //
             (node as Element).className = fnRes;
             // console.log(`applyModel - html:${(el as Element).innerHTML}`);
+
+            //
+            attr_keys.splice(attr_keys.indexOf('class'), 1);
         }
         if (hc['attr']['html']) {
             const fnRes = calcRes(hc['attr']['html'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             //
             (node as Element).innerHTML = fnRes;
             // console.log(`applyModel - html:${(el as Element).innerHTML}`);
+
+            //
+            attr_keys.splice(attr_keys.indexOf('html'), 1);
         }
         if (hc['attr']['text']) {
             const fnRes = calcRes(hc['attr']['text'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             //
             (node as HTMLElement).innerText = fnRes;
-        }
-        if (hc['attr']['value']) {
-            const fnRes = calcRes(hc['attr']['value'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+
             //
-            (node as HTMLInputElement).value = fnRes;
+            attr_keys.splice(attr_keys.indexOf('text'), 1);
         }
+        // if (hc['attr']['value']) {
+        //     const fnRes = calcRes(hc['attr']['value'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+        //     //
+        //     (node as HTMLInputElement).value = fnRes;
+
+        //     //
+        //     attr_keys.splice(attr_keys.indexOf('value'), 1);
+        // }
         if (hc['attr']['model']) {
             const fnRes = calcRes(hc['attr']['model'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
 
@@ -1747,8 +1768,19 @@ class Hacci {
                 //     call(hc['attr']['input']);
                 // }
             }
+
+            //
+            attr_keys.splice(attr_keys.indexOf('text'), 1);
         }
         // console.log(`procModel.Ed`);
+
+        //
+        for (let cnti: number = 0; cnti < attr_keys.length; cnti++) {
+            const attr_key: string = attr_keys[cnti];
+            const fnRes = calcRes(hc['attr'][attr_key], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+            //
+            node[attr_key] = fnRes;
+        }
     }
 
     /**

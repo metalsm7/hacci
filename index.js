@@ -589,6 +589,7 @@ var Hacci = (function () {
         if (!node['_hc'])
             return;
         var hc = node['_hc'];
+        var attr_keys = Object.keys(hc['attr']);
         if (hc['attr']['if']) {
             var fnRes = calcRes(hc['attr']['if'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             if (fnRes === true && hc['comment']) {
@@ -602,26 +603,22 @@ var Hacci = (function () {
                 node.parentNode.insertBefore(hc['comment'], node);
                 node.parentNode.removeChild(node);
             }
-        }
-        if (hc['attr']['disabled']) {
-            var fnRes = calcRes(hc['attr']['disabled'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
-            node.disabled = fnRes;
+            attr_keys.splice(attr_keys.indexOf('if'), 1);
         }
         if (hc['attr']['class']) {
             var fnRes = calcRes(hc['attr']['class'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             node.className = fnRes;
+            attr_keys.splice(attr_keys.indexOf('class'), 1);
         }
         if (hc['attr']['html']) {
             var fnRes = calcRes(hc['attr']['html'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             node.innerHTML = fnRes;
+            attr_keys.splice(attr_keys.indexOf('html'), 1);
         }
         if (hc['attr']['text']) {
             var fnRes = calcRes(hc['attr']['text'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             node.innerText = fnRes;
-        }
-        if (hc['attr']['value']) {
-            var fnRes = calcRes(hc['attr']['value'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
-            node.value = fnRes;
+            attr_keys.splice(attr_keys.indexOf('text'), 1);
         }
         if (hc['attr']['model']) {
             var fnRes = calcRes(hc['attr']['model'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
@@ -669,6 +666,12 @@ var Hacci = (function () {
                 }
                 !is_init && call_on_input && hc['attr']['input'] && call(hc['attr']['input'], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             }
+            attr_keys.splice(attr_keys.indexOf('text'), 1);
+        }
+        for (var cnti = 0; cnti < attr_keys.length; cnti++) {
+            var attr_key = attr_keys[cnti];
+            var fnRes = calcRes(hc['attr'][attr_key], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
+            node[attr_key] = fnRes;
         }
     };
     Hacci.prototype.arrayEventListener = function (target) {
