@@ -251,8 +251,8 @@ class Hacci {
                     //
                     const model_str = String(obj['_hc'].attr.for).replace(/(\(.*\)|.+)\s+(in)\s+/g, '').replace(/\s/g, '');
                     // const data_str = String(obj['_hc'].attr.for).replace(/\s+in\s+.*$/, '').replace(/\s/g, '');
-                    // console.log(`procForModel - fors.#${idx} - model_str:${model_str}`);
-                    // console.log(`procForModel - fors.#${idx} - data_str.#1:${data_str}`);
+                    // console.log(`procForModel - fors.#${cntk} - model_str:${model_str}`);
+                    // console.log(`procForModel - fors.#${cntk} - data_str.#1:${data_str}`);
                     //
                     const model: any = calcRes(model_str);
 
@@ -681,6 +681,9 @@ class Hacci {
     }
 
     private redefineModel(prop: string, parent: any = null, prev_model_prop: string = null): void {
+        // console.log(`redefineModel - prop:${prop} -> ${prop.replace(/([\.]__|^__)([^\.]+)/, '$2')}`);
+        prop = prop.replace(/([\.]__|^__)([^\.]+)/, '$2');
+        //
         const self: Hacci = this;
         //
         if (!self._traces.model.listen) {
@@ -728,16 +731,16 @@ class Hacci {
                     return model[model_prop];
                 },
                 set: (value: any) => {
-                    // console.log(`set:${prop} [${model_prop}]`);
+                    // console.log(`redefineModel - set:${prop} [${model_prop}]`);
                     //
                     model[model_prop] = value;
                     //
                     const is_array: boolean = Array.isArray(model[model_prop]);
                     is_array && self.arrayEventListener(model[model_prop]);
+                    // console.log(`redefineModel - set:${prop} [${model_prop}] - is_array:${is_array}`);
                     //
                     self._traces.model.listen(model_prop, model[model_prop]);
                     //
-                    // console.log(`defineProperty - props_str:${model_prop} / is array:${is_array}`);
                     if (!is_array) {
                         // 해당 모델의 상위로 올라가는 중 배열 모델이 있으면 -> 해당 모델에 대한 listen 처리
                         const props: string[] = model_prop.split('.');
@@ -749,14 +752,14 @@ class Hacci {
                             if (!Array.isArray(props_model)) continue;
                             // console.log(`defineProperty - props_str:${props_str} / is array:${Array.isArray(props_model)}`);
                             //
-                            // console.log(`defineProperty - procForModel - _replace - ${props_str}.${props[cnti + 1]} - model:${JSON.stringify(model[`${props_str}.${props[cnti + 1]}`])}`);
                             self.procForModel(props_model, '_replace', model[`${props_str}.${props[cnti + 1]}`]);
+
+                            //
+                            // self.redefineModel(props_str);
                         }
                     }
                     else {
-                        //
-                        console.log(`defineProperty - props_str:${model_prop} / is array:${is_array} / redefineModel(${model_prop.replace(/^__/, '')})`);
-                        this.redefineModel(model_prop.replace(/^__/, ''));
+                        // self.redefineModel(model_prop);
                     }
 
                     // 모델 변경시 text 변경 처리용
@@ -948,27 +951,26 @@ class Hacci {
                     // console.log(`procForModel - _replace - model exists:${(model[cntk] === args[0])}`);
                     //
                     hc['model_str'] = getModelStr(hc.attr.for, cntk);
-                    // console.log(`procForModel - fors.#${cntk} - model_str:${hc['model_str']}`);
+                    // console.log(`procForModel - fors.#${idx} - data_str.#2:${data_str}`);
 
                     //
                     const newNode: Node = (el as HTMLElement).cloneNode(true);
                     procs(newNode, el);
 
                     // 기존 자료의 attributes 값을 newNode의 attribute 값으로 변경 처리(변경된 경우만...)
-                    self.replaceAttributes(hc.for_elements[cntk], newNode);
-                    self.replaceTextNodes(hc.for_elements[cntk], newNode);
-                    // const node_attrs: NamedNodeMap = (hc.for_elements[cntk] as HTMLElement).attributes;
-                    // for (let cntq = 0; cntq < node_attrs.length; cntq++) {
-                    //     const node_attr: Attr = node_attrs.item(cntq);
-                    //     console.log(`attr - name:${node_attr.name} - ${(newNode as HTMLElement).attributes.getNamedItem(node_attr.name).value} / ${node_attr.value}`);
-                    // }
+                    let is_node_diff = self.replaceAttributes(hc.for_elements[cntk], newNode);
+                    // console.log(`procForModel - replaceAttributes - is_node_diff:${is_node_diff}`);
+                    !is_node_diff && (is_node_diff = self.replaceTextNodes(hc.for_elements[cntk], newNode));
+                    // console.log(`procForModel - replaceTextNodes - is_node_diff:${is_node_diff}`);
 
                     //
-                    // parentNode.insertBefore(newNode, hc.for_elements[cntk]);
-                    // parentNode.removeChild(hc.for_elements[cntk]);
-
-                    // //
-                    // hc.for_elements[cntk] = newNode;
+                    if (is_node_diff) {
+                        parentNode.insertBefore(newNode, hc.for_elements[cntk]);
+                        parentNode.removeChild(hc.for_elements[cntk]);
+    
+                        // //
+                        hc.for_elements[cntk] = newNode;
+                    }
                 }
             }
             else if (action && action === 'push') {
@@ -1793,11 +1795,16 @@ class Hacci {
         // console.log(`procModel.Ed`);
 
         //
+        const regex: RegExp = new RegExp(/^on/);
         for (let cnti: number = 0; cnti < attr_keys.length; cnti++) {
             const attr_key: string = attr_keys[cnti];
             //
+            // if (typeof(window[`on${attr_key}`]) !== 'undefined') continue;
+            if (regex.test(attr_key)) continue;
             if (typeof(window[`on${attr_key}`]) !== 'undefined') continue;
+            if (attr_key.indexOf('.') > -1 && typeof(window[`on${attr_key.split('.')[0]}`]) !== 'undefined') continue;
             //
+            // console.log(`procModel - attr_key:${attr_key}`);
             const fnRes = calcRes(hc['attr'][attr_key], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             //
             node[attr_key] = fnRes;
@@ -1851,7 +1858,7 @@ class Hacci {
         const self: Hacci = this;
         //
         const call = function(evt: Event, val: string, model_str: string = null): any {
-            // console.log(`registEventListener - call - val:${val}`);
+            console.log(`registEventListener - call - val:${val}`);
             //
             let exec = val;
             if (val.indexOf('(') < 0) {
@@ -1861,7 +1868,7 @@ class Hacci {
             //
             const args = `try{ var _event=arguments[0]; } catch(e) { _event=arguments[0]; }\n`;
             //
-            // console.log(`registEventListener - call - exec:${exec}`);
+            console.log(`registEventListener - call - exec:${exec}`);
             const fn = new Function(`${self._txts_mstr}${model_str ? model_str : ''}${args}return ${exec};`);
             return fn.apply(self, [evt]);
         }
@@ -1910,41 +1917,6 @@ class Hacci {
                                 text: node.childNodes[cnti].textContent,
                                 fn: null    // 컴파일된 함수
                             });
-                        break;
-                }
-            }
-
-            // 모델 변경시 text 변경 처리용
-            this.applyTextChange();
-        }
-    }
-
-    private replaceTextNodes(node: Node, tgtNode: Node): void {
-        // console.log(`replaceTextNodes`);
-        !node && (node = this.el);
-        //
-        if (node.hasChildNodes()) {
-            for (let cnti: number = 0; cnti < node.childNodes.length; cnti++) {
-                switch (node.childNodes[cnti].nodeType) {
-                    case 1: // element
-                        this.replaceTextNodes(node.childNodes[cnti], tgtNode.childNodes[cnti]);
-                        break;
-                    case 3: // text
-                        // console.log(`replaceTextNodes - textContent:${node.childNodes[cnti].textContent} / ${tgtNode.childNodes[cnti].textContent}`);
-                        node.childNodes[cnti].textContent !== tgtNode.childNodes[cnti].textContent &&
-                            (node.childNodes[cnti].textContent = tgtNode.childNodes[cnti].textContent);
-                        // /{{([^}}\r\n]+)?}}/g.test(node.childNodes[cnti].textContent) &&
-                        //     !root && this._traces.txts.push({
-                        //         node: node.childNodes[cnti],
-                        //         text: node.childNodes[cnti].textContent,
-                        //         fn: null    // 컴파일된 함수
-                        //     });
-                        // /{{([^}}\r\n]+)?}}/g.test(node.childNodes[cnti].textContent) &&
-                        //     root && root['_hc'] && root['_hc']['for_txts'] && root['_hc']['for_txts'].push({
-                        //         node: node.childNodes[cnti],
-                        //         text: node.childNodes[cnti].textContent,
-                        //         fn: null    // 컴파일된 함수
-                        //     });
                         break;
                 }
             }
@@ -2051,8 +2023,9 @@ class Hacci {
         return new Function(code.replace(/[\r\t\n]/g, ''));
     }
 
-    private replaceAttributes(srcNode: Node, tgtNode: Node): void {
+    private replaceAttributes(srcNode: Node, tgtNode: Node): boolean {
         // console.log(`replaceAttributes`);
+        let rtn_val: boolean = false;
         //
         const node_attrs: NamedNodeMap = (srcNode as HTMLElement).attributes;
         if (node_attrs) {
@@ -2065,14 +2038,51 @@ class Hacci {
             }
         }
         //
+        !rtn_val && (rtn_val = srcNode.hasChildNodes() != tgtNode.hasChildNodes());
+        //
         if (srcNode.hasChildNodes()) {
             //
             for (let cnti: number = 0; cnti < srcNode.childNodes.length; cnti++) {
                 tgtNode.hasChildNodes() &&
                     tgtNode.childNodes[cnti] &&
-                    this.replaceAttributes(srcNode.childNodes[cnti], tgtNode.childNodes[cnti]);
+                    (rtn_val = this.replaceAttributes(srcNode.childNodes[cnti], tgtNode.childNodes[cnti]));
             }
+            //
+            !rtn_val && (rtn_val = tgtNode.hasChildNodes() && srcNode.childNodes.length != tgtNode.childNodes.length);
         }
+        //
+        return rtn_val;
+    }
+
+    private replaceTextNodes(srcNode: Node, tgtNode: Node): boolean {
+        //
+        let rtn_val: boolean = false;
+        //
+        !rtn_val && (rtn_val = srcNode.hasChildNodes() != tgtNode.hasChildNodes());
+        //
+        if (srcNode.hasChildNodes()) {
+            //
+            for (let cnti: number = 0; cnti < srcNode.childNodes.length; cnti++) {
+                switch (srcNode.childNodes[cnti].nodeType) {
+                    case 1: // element
+                        tgtNode.hasChildNodes() &&
+                            tgtNode.childNodes[cnti] &&
+                            (rtn_val = this.replaceTextNodes(srcNode.childNodes[cnti], tgtNode.childNodes[cnti]));
+                        break;
+                    case 3: // text
+                        tgtNode.hasChildNodes() &&
+                            tgtNode.childNodes[cnti] &&
+                            srcNode.childNodes[cnti].textContent !== tgtNode.childNodes[cnti].textContent &&
+                            (srcNode.childNodes[cnti].textContent = tgtNode.childNodes[cnti].textContent);
+                        // console.log(`replaceTextNodes - src:${srcNode.childNodes[cnti].textContent} / tgt:${tgtNode.childNodes[cnti].textContent}}`);
+                        break;
+                }
+            }
+            //
+            !rtn_val && (rtn_val = tgtNode.hasChildNodes() && srcNode.childNodes.length != tgtNode.childNodes.length);
+        }
+        //
+        return rtn_val;
     }
 
     private scrollHeight(el: Element): number {

@@ -300,9 +300,9 @@ var Hacci = (function () {
         }
     };
     Hacci.prototype.redefineModel = function (prop, parent, prev_model_prop) {
-        var _this = this;
         if (parent === void 0) { parent = null; }
         if (prev_model_prop === void 0) { prev_model_prop = null; }
+        prop = prop.replace(/([\.]__|^__)([^\.]+)/, '$2');
         var self = this;
         if (!self._traces.model.listen) {
             self._traces.model.listen = function (prop, model) {
@@ -350,8 +350,6 @@ var Hacci = (function () {
                     }
                 }
                 else {
-                    console.log("defineProperty - props_str:" + model_prop + " / is array:" + is_array + " / redefineModel(" + model_prop.replace(/^__/, '') + ")");
-                    _this.redefineModel(model_prop.replace(/^__/, ''));
                 }
                 self.applyTextChange();
             }
@@ -447,8 +445,13 @@ var Hacci = (function () {
                     hc['model_str'] = getModelStr(hc.attr.for, cntk);
                     var newNode = el.cloneNode(true);
                     procs(newNode, el);
-                    self.replaceAttributes(hc.for_elements[cntk], newNode);
-                    self.replaceTextNodes(hc.for_elements[cntk], newNode);
+                    var is_node_diff = self.replaceAttributes(hc.for_elements[cntk], newNode);
+                    !is_node_diff && (is_node_diff = self.replaceTextNodes(hc.for_elements[cntk], newNode));
+                    if (is_node_diff) {
+                        parentNode.insertBefore(newNode, hc.for_elements[cntk]);
+                        parentNode.removeChild(hc.for_elements[cntk]);
+                        hc.for_elements[cntk] = newNode;
+                    }
                 }
             }
             else if (action && action === 'push') {
@@ -675,9 +678,14 @@ var Hacci = (function () {
             }
             attr_keys.splice(attr_keys.indexOf('text'), 1);
         }
+        var regex = new RegExp(/^on/);
         for (var cnti = 0; cnti < attr_keys.length; cnti++) {
             var attr_key = attr_keys[cnti];
+            if (regex.test(attr_key))
+                continue;
             if (typeof (window["on" + attr_key]) !== 'undefined')
+                continue;
+            if (attr_key.indexOf('.') > -1 && typeof (window["on" + attr_key.split('.')[0]]) !== 'undefined')
                 continue;
             var fnRes = calcRes(hc['attr'][attr_key], root && root['_hc'] && root['_hc']['model_str'] ? root['_hc']['model_str'] : null);
             node[attr_key] = fnRes;
@@ -742,12 +750,14 @@ var Hacci = (function () {
         var self = this;
         var call = function (evt, val, model_str) {
             if (model_str === void 0) { model_str = null; }
+            console.log("registEventListener - call - val:" + val);
             var exec = val;
             if (val.indexOf('(') < 0) {
                 exec += '(_event)';
             }
             exec = exec.replace(/;$/, '');
             var args = "try{ var _event=arguments[0]; } catch(e) { _event=arguments[0]; }\n";
+            console.log("registEventListener - call - exec:" + exec);
             var fn = new Function("" + self._txts_mstr + (model_str ? model_str : '') + args + "return " + exec + ";");
             return fn.apply(self, [evt]);
         };
@@ -787,23 +797,6 @@ var Hacci = (function () {
                             text: node.childNodes[cnti].textContent,
                             fn: null
                         });
-                        break;
-                }
-            }
-            this.applyTextChange();
-        }
-    };
-    Hacci.prototype.replaceTextNodes = function (node, tgtNode) {
-        !node && (node = this.el);
-        if (node.hasChildNodes()) {
-            for (var cnti = 0; cnti < node.childNodes.length; cnti++) {
-                switch (node.childNodes[cnti].nodeType) {
-                    case 1:
-                        this.replaceTextNodes(node.childNodes[cnti], tgtNode.childNodes[cnti]);
-                        break;
-                    case 3:
-                        node.childNodes[cnti].textContent !== tgtNode.childNodes[cnti].textContent &&
-                            (node.childNodes[cnti].textContent = tgtNode.childNodes[cnti].textContent);
                         break;
                 }
             }
@@ -884,6 +877,7 @@ var Hacci = (function () {
         return new Function(code.replace(/[\r\t\n]/g, ''));
     };
     Hacci.prototype.replaceAttributes = function (srcNode, tgtNode) {
+        var rtn_val = false;
         var node_attrs = srcNode.attributes;
         if (node_attrs) {
             for (var cnti = 0; cnti < node_attrs.length; cnti++) {
@@ -893,13 +887,39 @@ var Hacci = (function () {
                     (src_node_attr.value = tgt_node_attr.value);
             }
         }
+        !rtn_val && (rtn_val = srcNode.hasChildNodes() != tgtNode.hasChildNodes());
         if (srcNode.hasChildNodes()) {
             for (var cnti = 0; cnti < srcNode.childNodes.length; cnti++) {
                 tgtNode.hasChildNodes() &&
                     tgtNode.childNodes[cnti] &&
-                    this.replaceAttributes(srcNode.childNodes[cnti], tgtNode.childNodes[cnti]);
+                    (rtn_val = this.replaceAttributes(srcNode.childNodes[cnti], tgtNode.childNodes[cnti]));
             }
+            !rtn_val && (rtn_val = tgtNode.hasChildNodes() && srcNode.childNodes.length != tgtNode.childNodes.length);
         }
+        return rtn_val;
+    };
+    Hacci.prototype.replaceTextNodes = function (srcNode, tgtNode) {
+        var rtn_val = false;
+        !rtn_val && (rtn_val = srcNode.hasChildNodes() != tgtNode.hasChildNodes());
+        if (srcNode.hasChildNodes()) {
+            for (var cnti = 0; cnti < srcNode.childNodes.length; cnti++) {
+                switch (srcNode.childNodes[cnti].nodeType) {
+                    case 1:
+                        tgtNode.hasChildNodes() &&
+                            tgtNode.childNodes[cnti] &&
+                            (rtn_val = this.replaceTextNodes(srcNode.childNodes[cnti], tgtNode.childNodes[cnti]));
+                        break;
+                    case 3:
+                        tgtNode.hasChildNodes() &&
+                            tgtNode.childNodes[cnti] &&
+                            srcNode.childNodes[cnti].textContent !== tgtNode.childNodes[cnti].textContent &&
+                            (srcNode.childNodes[cnti].textContent = tgtNode.childNodes[cnti].textContent);
+                        break;
+                }
+            }
+            !rtn_val && (rtn_val = tgtNode.hasChildNodes() && srcNode.childNodes.length != tgtNode.childNodes.length);
+        }
+        return rtn_val;
     };
     Hacci.prototype.scrollHeight = function (el) {
         return el.nodeType === 9 ?
