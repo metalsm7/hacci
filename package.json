@@ -1,6 +1,6 @@
 {
   "name": "hacci",
-  "version": "0.3.28",
+  "version": "0.4.0",
   "description": "simple and tiny frontend framework",
   "homepage": "https://github.com/metalsm7/hacci",
   "bugs": {
@@ -30,8 +30,10 @@
     }
   },
   "scripts": {
-    "build-dev": "tsc -t es5 && sed -i.bak \"s/^exports/\\\\/\\\\/ exports/g\" index.js && sed -i \"s/^Object.defineProperty(exports/\\\\/\\\\/ Object.defineProperty(exports/g\" index.js && sed -i \"s/^\\\\/\\\\/# sourceMappingURL/\\\\/\\\\/ sourceMappingURL/g\" index.js && cp index.js dist/hacci.js && rm -f index.js && mv index.js.bak index.js && sed -i \"s/^window/\\\\/\\\\/ window/g\" index.js && cp dist/hacci.js sample/public/hacci.js",
-    "build": "tsc -t es5 && sed -i.min.bak \"s/^exports/\\\\/\\\\/ exports/g\" index.js && sed -i \"s/^Object.defineProperty(exports/\\\\/\\\\/ Object.defineProperty(exports/g\" index.js && sed -i \"s/^\\\\/\\\\/# sourceMappingURL/\\\\/\\\\/ sourceMappingURL/g\" index.js && uglifyjs index.js -c -m > dist/hacci.min.js && rm -f index.js && mv index.js.min.bak index.js && sed -i \"s/^window/\\\\/\\\\/ window/g\" index.js",
+    "build-dev": "npx tsc -t es5 && sed -i.bak \"s/^exports/\\\\/\\\\/ exports/g\" index.js && sed -i \"s/^Object.defineProperty(exports/\\\\/\\\\/ Object.defineProperty(exports/g\" index.js && sed -i \"s/^\\\\/\\\\/# sourceMappingURL/\\\\/\\\\/ sourceMappingURL/g\" index.js && cp index.js dist/hacci.js && rm -f index.js && mv index.js.bak index.js && sed -i \"s/^window/\\\\/\\\\/ window/g\" index.js && cp dist/hacci.js sample/public/hacci.js",
+    "build-dev-mac": "npx tsc -t es5 && sed -i.bak \"s/^exports/\\\\/\\\\/ exports/g\" index.js && sed -i '' \"s/^Object.defineProperty(exports/\\\\/\\\\/ Object.defineProperty(exports/g\" index.js && sed -i '' \"s/^\\\\/\\\\/# sourceMappingURL/\\\\/\\\\/ sourceMappingURL/g\" index.js && cp index.js dist/hacci.js && rm -f index.js && mv index.js.bak index.js && sed -i '' \"s/^window/\\\\/\\\\/ window/g\" index.js && cp dist/hacci.js sample/public/hacci.js",
+    "build": "npx tsc -t es5 && sed -i.min.bak \"s/^exports/\\\\/\\\\/ exports/g\" index.js && sed -i \"s/^Object.defineProperty(exports/\\\\/\\\\/ Object.defineProperty(exports/g\" index.js && sed -i \"s/^\\\\/\\\\/# sourceMappingURL/\\\\/\\\\/ sourceMappingURL/g\" index.js && uglifyjs index.js -c -m > dist/hacci.min.js && rm -f index.js && mv index.js.min.bak index.js && sed -i \"s/^window/\\\\/\\\\/ window/g\" index.js",
+    "build-mac": "npx tsc -t es5 && sed -i.min.bak \"s/^exports/\\\\/\\\\/ exports/g\" index.js && sed -i '' \"s/^Object.defineProperty(exports/\\\\/\\\\/ Object.defineProperty(exports/g\" index.js && sed -i '' \"s/^\\\\/\\\\/# sourceMappingURL/\\\\/\\\\/ sourceMappingURL/g\" index.js && uglifyjs index.js -c -m > dist/hacci.min.js && rm -f index.js && mv index.js.min.bak index.js && sed -i '' \"s/^window/\\\\/\\\\/ window/g\" index.js",
     "watch": "npm-watch",
     "sample": "node sample/index.js"
   },
@@ -59,6 +61,7 @@
     "koa-views": "^7.0.1",
     "mustache": "^4.2.0",
     "npm-watch": "^0.9.0",
+    "typescript": "^4.5.5",
     "uglify-js": "^3.13.6",
     "winston": "^3.3.3"
   }

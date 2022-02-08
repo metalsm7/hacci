@@ -2,6 +2,7 @@ interface HacciOption {
     id: string | null;
     el: Element | null;
     template: string | null;
+    style: string | null;
     data: any;
     computed: any;
     method: any;
@@ -24,7 +25,7 @@ declare class Hacci {
     private _toi_select;
     private _bus;
     private _tick;
-    static readonly instances: any;
+    static get instances(): any;
     constructor(option?: HacciOption | null);
     private init;
     private procForNodes;
@@ -63,8 +64,8 @@ declare class Hacci {
     emit(event: string, ...args: any[]): number;
     destroy(): void;
     mount(el: Element | null): Hacci;
-    readonly el: Element | null;
-    readonly refs: any;
+    get el(): Element | null;
+    get refs(): any;
 }
 export { Hacci };
 export default Hacci;
