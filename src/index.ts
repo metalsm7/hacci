@@ -194,13 +194,14 @@ class Hacci {
                     //
                     this._el = dom;
                     //
-                    if (this._el.children.length > 0) {
-                        const childs: HTMLCollection = this._el.children;
-                        for (let cnti: number = 0; cnti < childs.length; cnti++) {
-                            const child: Element = childs.item(cnti);
-                            !child.classList.contains(hacci_class_name) && child.classList.add(hacci_class_name);
-                        }
-                    }
+                    // if (this._el.children.length > 0) {
+                    //     const childs: HTMLCollection = this._el.children;
+                    //     for (let cnti: number = 0; cnti < childs.length; cnti++) {
+                    //         const child: Element = childs.item(cnti);
+                    //         !child.classList.contains(hacci_class_name) && child.classList.add(hacci_class_name);
+                    //     }
+                    // }
+                    !this.el.classList.contains(hacci_class_name) && this.el.classList.add(hacci_class_name);
                 }
                 else {
                     this.el.innerHTML = this._template;

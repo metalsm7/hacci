@@ -126,13 +126,7 @@ var Hacci = (function () {
                     this.el.parentNode.insertBefore(dom, this.el);
                     dom.parentNode.removeChild(this.el);
                     this._el = dom;
-                    if (this._el.children.length > 0) {
-                        var childs = this._el.children;
-                        for (var cnti = 0; cnti < childs.length; cnti++) {
-                            var child = childs.item(cnti);
-                            !child.classList.contains(hacci_class_name) && child.classList.add(hacci_class_name);
-                        }
-                    }
+                    !this.el.classList.contains(hacci_class_name) && this.el.classList.add(hacci_class_name);
                 }
                 else {
                     this.el.innerHTML = this._template;
